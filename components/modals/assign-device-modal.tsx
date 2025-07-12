@@ -64,25 +64,28 @@ export function AssignDeviceModal({ open, onOpenChange, onSubmit }: AssignDevice
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { assignmentsApi } = await import('@/lib/api')
       
       const selectedDevice = availableDevices.find(d => d.id === formData.deviceId)
       const selectedUser = users.find(u => u.id === formData.userId)
       
       const newAssignment = {
-        id: `ASG-${Date.now()}`,
-        ...formData,
-        deviceName: selectedDevice?.name || "",
-        userName: selectedUser?.name || "",
-        userEmail: selectedUser?.email || "",
-        status: "Active",
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
+        device_id: formData.deviceId,
+        user_id: formData.userId,
+        assignment_type: formData.assignmentType,
+        assignment_date: formData.assignmentDate,
+        expected_return_date: formData.expectedReturnDate,
+        reason: formData.reason,
+        notes: formData.notes,
+        terms: formData.terms,
+        supervisor: formData.supervisor,
+        status: "Active"
       }
       
+      const createdAssignment = await assignmentsApi.create(newAssignment)
+      
       if (onSubmit) {
-        onSubmit(newAssignment)
+        onSubmit(createdAssignment)
       }
       
       toast.success(`Device assigned to ${selectedUser?.name} successfully`)
@@ -92,7 +95,7 @@ export function AssignDeviceModal({ open, onOpenChange, onSubmit }: AssignDevice
         'Current User',
         'Assigned device',
         'assignment',
-        newAssignment.id,
+        createdAssignment.id,
         `Assigned ${selectedDevice?.name} to ${selectedUser?.name}`
       )
       
@@ -111,6 +114,7 @@ export function AssignDeviceModal({ open, onOpenChange, onSubmit }: AssignDevice
       
       onOpenChange(false)
     } catch (error) {
+      console.error('Failed to assign device:', error)
       toast.error("Failed to assign device")
     } finally {
       setIsLoading(false)

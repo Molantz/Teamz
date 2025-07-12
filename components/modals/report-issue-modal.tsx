@@ -69,20 +69,29 @@ export function ReportIssueModal({ open, onOpenChange, onSubmit }: ReportIssueMo
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { incidentsApi } = await import('@/lib/api')
       
       const newIssue = {
-        id: `INC-${Date.now()}`,
-        ...formData,
+        title: formData.title,
+        category: formData.category,
+        priority: formData.priority,
+        description: formData.description,
+        affected_user: formData.affectedUser,
+        affected_device: formData.affectedDevice,
+        department: formData.department,
+        contact_email: formData.contactEmail,
+        contact_phone: formData.contactPhone,
+        steps_to_reproduce: formData.stepsToReproduce,
+        expected_behavior: formData.expectedBehavior,
+        actual_behavior: formData.actualBehavior,
         status: "New",
-        createdAt: new Date().toISOString(),
-        assignee: "Unassigned",
-        lastUpdated: new Date().toISOString()
+        assignee: "Unassigned"
       }
       
+      const createdIssue = await incidentsApi.create(newIssue)
+      
       if (onSubmit) {
-        onSubmit(newIssue)
+        onSubmit(createdIssue)
       }
       
       toast.success(`Issue "${formData.title}" reported successfully`)
@@ -92,7 +101,7 @@ export function ReportIssueModal({ open, onOpenChange, onSubmit }: ReportIssueMo
         'Current User',
         'Reported issue',
         'incident',
-        newIssue.id,
+        createdIssue.id,
         `Reported issue: ${formData.title} (${formData.priority} priority)`
       )
       
@@ -114,6 +123,7 @@ export function ReportIssueModal({ open, onOpenChange, onSubmit }: ReportIssueMo
       
       onOpenChange(false)
     } catch (error) {
+      console.error('Failed to report issue:', error)
       toast.error("Failed to report issue")
     } finally {
       setIsLoading(false)

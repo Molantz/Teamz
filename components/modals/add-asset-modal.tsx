@@ -72,18 +72,28 @@ export function AddAssetModal({ open, onOpenChange, onSubmit }: AddAssetModalPro
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { assetsApi } = await import('@/lib/api')
       
       const newAsset = {
-        id: `AST-${Date.now()}`,
-        ...formData,
-        createdAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString()
+        name: formData.name,
+        type: formData.type,
+        model: formData.model,
+        serial_number: formData.serialNumber,
+        manufacturer: formData.manufacturer,
+        purchase_date: formData.purchaseDate,
+        purchase_price: formData.purchasePrice ? parseFloat(formData.purchasePrice) : undefined,
+        warranty_expiry: formData.warrantyExpiry,
+        location: formData.location,
+        status: formData.status,
+        assigned_to: formData.assignedTo,
+        notes: formData.notes,
+        specifications: formData.specifications
       }
       
+      const createdAsset = await assetsApi.create(newAsset)
+      
       if (onSubmit) {
-        onSubmit(newAsset)
+        onSubmit(createdAsset)
       }
       
       toast.success(`Asset ${formData.name} added successfully`)
@@ -93,7 +103,7 @@ export function AddAssetModal({ open, onOpenChange, onSubmit }: AddAssetModalPro
         'Current User',
         'Created asset',
         'asset',
-        newAsset.id,
+        createdAsset.id,
         `Created asset: ${formData.name} (${formData.type})`
       )
       
@@ -116,6 +126,7 @@ export function AddAssetModal({ open, onOpenChange, onSubmit }: AddAssetModalPro
       
       onOpenChange(false)
     } catch (error) {
+      console.error('Failed to add asset:', error)
       toast.error("Failed to add asset")
     } finally {
       setIsLoading(false)

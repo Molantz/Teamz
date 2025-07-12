@@ -72,21 +72,28 @@ export function NewRequestModal({ open, onOpenChange, onSubmit }: NewRequestModa
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { requestsApi } = await import('@/lib/api')
       
       const newRequest = {
-        id: `REQ-${Date.now()}`,
-        ...formData,
-        status: "Pending",
-        createdAt: new Date().toISOString(),
-        approvedBy: null,
-        approvedAt: null,
-        lastUpdated: new Date().toISOString()
+        title: formData.title,
+        type: formData.type,
+        priority: formData.priority,
+        description: formData.description,
+        requester: formData.requester,
+        department: formData.department,
+        budget: formData.budget ? parseFloat(formData.budget) : undefined,
+        expected_delivery: formData.expectedDelivery,
+        justification: formData.justification,
+        impact: formData.impact,
+        alternatives: formData.alternatives,
+        attachments: formData.attachments,
+        status: "Pending"
       }
       
+      const createdRequest = await requestsApi.create(newRequest)
+      
       if (onSubmit) {
-        onSubmit(newRequest)
+        onSubmit(createdRequest)
       }
       
       toast.success(`Request "${formData.title}" submitted successfully`)
@@ -96,7 +103,7 @@ export function NewRequestModal({ open, onOpenChange, onSubmit }: NewRequestModa
         'Current User',
         'Created service request',
         'request',
-        newRequest.id,
+        createdRequest.id,
         `Created request: ${formData.title} (${formData.type})`
       )
       
@@ -118,6 +125,7 @@ export function NewRequestModal({ open, onOpenChange, onSubmit }: NewRequestModa
       
       onOpenChange(false)
     } catch (error) {
+      console.error('Failed to submit request:', error)
       toast.error("Failed to submit request")
     } finally {
       setIsLoading(false)

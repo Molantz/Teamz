@@ -363,8 +363,10 @@ export default function UsersPage() {
         <AssignDeviceModal
           open={assignDeviceModal.open}
           onOpenChange={(open) => setAssignDeviceModal({ open, user: open ? assignDeviceModal.user : null })}
-          employeeName={assignDeviceModal.user.name}
-            employeeId={assignDeviceModal.user.employeeId || assignDeviceModal.user.id.toString()}
+          onSubmit={(data) => {
+            console.log("Device assigned:", data)
+            setAssignDeviceModal({ open: false, user: null })
+          }}
         />
       )}
 

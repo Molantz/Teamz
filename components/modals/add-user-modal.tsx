@@ -60,19 +60,23 @@ export function AddUserModal({ open, onOpenChange, onSubmit }: AddUserModalProps
     setIsLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const { usersApi } = await import('@/lib/api')
       
       const newUser = {
-        id: `USR-${Date.now()}`,
-        ...formData,
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone,
+        department: formData.department,
+        role: formData.role,
         status: "Active",
-        createdAt: new Date().toISOString(),
-        lastLogin: null
+        position: formData.role,
+        notes: formData.notes
       }
       
+      const createdUser = await usersApi.create(newUser)
+      
       if (onSubmit) {
-        onSubmit(newUser)
+        onSubmit(createdUser)
       }
       
       toast.success(`User ${formData.firstName} ${formData.lastName} added successfully`)
@@ -82,7 +86,7 @@ export function AddUserModal({ open, onOpenChange, onSubmit }: AddUserModalProps
         'Current User',
         'Created user',
         'user',
-        newUser.id,
+        createdUser.id,
         `Created user: ${formData.firstName} ${formData.lastName} (${formData.role})`
       )
       
@@ -101,6 +105,7 @@ export function AddUserModal({ open, onOpenChange, onSubmit }: AddUserModalProps
       
       onOpenChange(false)
     } catch (error) {
+      console.error('Failed to add user:', error)
       toast.error("Failed to add user")
     } finally {
       setIsLoading(false)

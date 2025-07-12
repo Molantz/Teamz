@@ -1,116 +1,281 @@
-// API utility functions for CRUD operations
-
-const API_BASE = '/api'
-
-// Generic fetch wrapper
-async function apiRequest(endpoint: string, options: RequestInit = {}) {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  })
-  
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.statusText}`)
-  }
-  
-  return response.json()
-}
+import { supabase, User, Asset, Incident, Request, Assignment } from './supabase'
 
 // Users API
 export const usersApi = {
-  getAll: () => apiRequest('/users'),
-  create: (data: any) => apiRequest('/users', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id: number, data: any) => apiRequest(`/users/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (id: number) => apiRequest(`/users/${id}`, {
-    method: 'DELETE',
-  }),
+  async getAll(): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<User | null> {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(userData: Partial<User>): Promise<User> {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([userData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, userData: Partial<User>): Promise<User> {
+    const { data, error } = await supabase
+      .from('users')
+      .update(userData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
 }
 
-// Devices API
-export const devicesApi = {
-  getAll: () => apiRequest('/devices'),
-  create: (data: any) => apiRequest('/devices', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id: number, data: any) => apiRequest(`/devices/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (id: number) => apiRequest(`/devices/${id}`, {
-    method: 'DELETE',
-  }),
+// Assets API
+export const assetsApi = {
+  async getAll(): Promise<Asset[]> {
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<Asset | null> {
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(assetData: Partial<Asset>): Promise<Asset> {
+    const { data, error } = await supabase
+      .from('assets')
+      .insert([assetData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, assetData: Partial<Asset>): Promise<Asset> {
+    const { data, error } = await supabase
+      .from('assets')
+      .update(assetData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('assets')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
 }
 
 // Incidents API
 export const incidentsApi = {
-  getAll: () => apiRequest('/incidents'),
-  create: (data: any) => apiRequest('/incidents', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id: number, data: any) => apiRequest(`/incidents/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (id: number) => apiRequest(`/incidents/${id}`, {
-    method: 'DELETE',
-  }),
+  async getAll(): Promise<Incident[]> {
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<Incident | null> {
+    const { data, error } = await supabase
+      .from('incidents')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(incidentData: Partial<Incident>): Promise<Incident> {
+    const { data, error } = await supabase
+      .from('incidents')
+      .insert([incidentData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, incidentData: Partial<Incident>): Promise<Incident> {
+    const { data, error } = await supabase
+      .from('incidents')
+      .update(incidentData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('incidents')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
 }
 
 // Requests API
 export const requestsApi = {
-  getAll: () => apiRequest('/requests'),
-  create: (data: any) => apiRequest('/requests', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id: number, data: any) => apiRequest(`/requests/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (id: number) => apiRequest(`/requests/${id}`, {
-    method: 'DELETE',
-  }),
+  async getAll(): Promise<Request[]> {
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<Request | null> {
+    const { data, error } = await supabase
+      .from('requests')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(requestData: Partial<Request>): Promise<Request> {
+    const { data, error } = await supabase
+      .from('requests')
+      .insert([requestData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, requestData: Partial<Request>): Promise<Request> {
+    const { data, error } = await supabase
+      .from('requests')
+      .update(requestData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('requests')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
 }
 
-// Projects API
-export const projectsApi = {
-  getAll: () => apiRequest('/projects'),
-  create: (data: any) => apiRequest('/projects', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id: number, data: any) => apiRequest(`/projects/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (id: number) => apiRequest(`/projects/${id}`, {
-    method: 'DELETE',
-  }),
-}
+// Assignments API
+export const assignmentsApi = {
+  async getAll(): Promise<Assignment[]> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
 
-// Departments API
-export const departmentsApi = {
-  getAll: () => apiRequest('/departments'),
-  create: (data: any) => apiRequest('/departments', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }),
-  update: (id: number, data: any) => apiRequest(`/departments/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify(data),
-  }),
-  delete: (id: number) => apiRequest(`/departments/${id}`, {
-    method: 'DELETE',
-  }),
+  async getById(id: string): Promise<Assignment | null> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(assignmentData: Partial<Assignment>): Promise<Assignment> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .insert([assignmentData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, assignmentData: Partial<Assignment>): Promise<Assignment> {
+    const { data, error } = await supabase
+      .from('assignments')
+      .update(assignmentData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('assignments')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
 } 

@@ -105,26 +105,32 @@ export default function Dashboard() {
 
   const handleAddUser = (data: any) => {
     console.log("New user added:", data)
+    // Refresh dashboard data if needed
   }
 
   const handleAddAsset = (data: any) => {
     console.log("New asset added:", data)
+    // Refresh dashboard data if needed
   }
 
   const handleReportIssue = (data: any) => {
     console.log("Issue reported:", data)
+    // Refresh dashboard data if needed
   }
 
   const handleNewRequest = (data: any) => {
     console.log("New request created:", data)
+    // Refresh dashboard data if needed
   }
 
   const handleAssignDevice = (data: any) => {
     console.log("Device assigned:", data)
+    // Refresh dashboard data if needed
   }
 
   const handleViewReports = (data: any) => {
     console.log("Report generated:", data)
+    // Handle report generation
   }
 
   return (
