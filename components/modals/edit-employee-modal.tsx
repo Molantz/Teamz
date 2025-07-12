@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
 import { User, Upload, Camera, Save, FileText, CreditCard, Key, Building2 } from "lucide-react"
+import { SignaturePad } from "@/components/ui/signature-pad"
 import { useState } from "react"
 
 interface EditEmployeeModalProps {
@@ -28,6 +29,7 @@ interface EditEmployeeModalProps {
     joinDate: string
     status: string
     avatar: string
+    signature?: string
   }
 }
 
@@ -222,21 +224,19 @@ export function EditEmployeeModal({ open, onOpenChange, employee }: EditEmployee
                 {/* Signature */}
                 <div className="space-y-2">
                   <Label>Digital Signature</Label>
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <div className="space-y-2">
-                      <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">Upload signature image or use signature pad</p>
-                      <div className="flex justify-center gap-2">
-                        <Button variant="outline" size="sm">
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Image
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          Signature Pad
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  <SignaturePad
+                    onSave={(signatureData) => {
+                      // Store signature data in form state
+                      setFormData(prev => ({ ...prev, signature: signatureData }))
+                    }}
+                    onClear={() => {
+                      setFormData(prev => ({ ...prev, signature: undefined }))
+                    }}
+                    initialSignature={formData.signature}
+                    width={350}
+                    height={150}
+                    className="border-0 shadow-none"
+                  />
                 </div>
               </CardContent>
             </Card>

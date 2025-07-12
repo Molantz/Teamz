@@ -19,6 +19,7 @@ export interface User {
   position?: string
   employee_id?: string
   join_date?: string
+  signature?: string
   created_at: string
   updated_at: string
 }

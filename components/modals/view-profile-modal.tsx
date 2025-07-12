@@ -35,6 +35,7 @@ import {
 } from "lucide-react"
 import { assetsApi, incidentsApi, requestsApi } from "@/lib/api"
 import { Asset, Incident, Request } from "@/lib/supabase"
+import { SignatureDisplay } from "@/components/ui/signature-display"
 
 interface ViewProfileModalProps {
   open: boolean
@@ -50,6 +51,7 @@ interface ViewProfileModalProps {
     joinDate: string
     status: string
     avatar: string
+    signature?: string
   }
 }
 
@@ -228,7 +230,7 @@ export function ViewProfileModal({ open, onOpenChange, user }: ViewProfileModalP
 
   const handleUnassignDevice = async (deviceId: string) => {
     try {
-      await assetsApi.update(deviceId, { assigned_to: null, status: "Available" })
+      await assetsApi.update(deviceId, { assigned_to: undefined, status: "Available" })
       setAssignedDevices(prev => prev.filter(device => device.id !== deviceId))
       toast.success("Device unassigned successfully")
     } catch (error) {
@@ -595,6 +597,15 @@ export function ViewProfileModal({ open, onOpenChange, user }: ViewProfileModalP
                         <p className="text-sm text-muted-foreground">2 times</p>
                       </div>
                     </div>
+
+                    {/* Signature Display */}
+                    <SignatureDisplay
+                      signatureData={user.signature || undefined}
+                      employeeName={user.name}
+                      signedDate={user.joinDate}
+                      signedBy={user.name}
+                      showDetails={true}
+                    />
 
                     {/* ID Card Actions */}
                     <div className="flex gap-2">

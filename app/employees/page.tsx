@@ -34,6 +34,7 @@ import { useForm } from "react-hook-form"
 import { usersApi, assetsApi, incidentsApi, requestsApi } from "@/lib/api"
 import { User as UserType, Asset, Incident, Request } from "@/lib/supabase"
 import { auditLogger } from "@/lib/audit-log"
+import { SignatureModal } from "@/components/modals/signature-modal"
 
 interface EmployeeWithStats extends UserType {
   id: string
@@ -73,6 +74,7 @@ export default function EmployeesPage() {
   const [filterStatus, setFilterStatus] = useState("")
   const [addEmployeeModal, setAddEmployeeModal] = useState(false)
   const [selectedEmployee, setSelectedEmployee] = useState<EmployeeWithStats | null>(null)
+  const [signatureModal, setSignatureModal] = useState<{ open: boolean; employee: EmployeeWithStats | null }>({ open: false, employee: null })
 
   const form = useForm({
     defaultValues: {
@@ -135,7 +137,7 @@ export default function EmployeesPage() {
     const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.position.toLowerCase().includes(searchTerm.toLowerCase())
+                         (employee.position?.toLowerCase().includes(searchTerm.toLowerCase()) || false)
     const matchesDepartment = !filterDepartment || employee.department === filterDepartment
     const matchesStatus = !filterStatus || employee.status === filterStatus
     
@@ -251,6 +253,40 @@ export default function EmployeesPage() {
   const handleEmploymentHistory = (employee: EmployeeWithStats) => {
     setSelectedEmployee(employee)
     toast.info(`Employment History for ${employee.name} - Would open history modal`)
+  }
+
+  const handleCaptureSignature = (employee: EmployeeWithStats) => {
+    setSignatureModal({ open: true, employee })
+  }
+
+  const handleSaveSignature = async (signatureData: string) => {
+    if (!signatureModal.employee) return
+
+    try {
+      // Update employee with signature data
+      await usersApi.update(signatureModal.employee.id, { signature: signatureData })
+      
+      // Update local state
+      setEmployees(prev => prev.map(emp => 
+        emp.id === signatureModal.employee?.id 
+          ? { ...emp, signature: signatureData }
+          : emp
+      ))
+      
+      toast.success(`Signature captured for ${signatureModal.employee.name}`)
+      
+      auditLogger.logUserAction(
+        'current-user',
+        'Current User',
+        'Captured signature',
+        'employee',
+        signatureModal.employee.id,
+        `Captured signature for ${signatureModal.employee.name}`
+      )
+    } catch (error) {
+      console.error('Failed to save signature:', error)
+      toast.error('Failed to save signature')
+    }
   }
 
   const handleExportEmployees = () => {
@@ -503,6 +539,10 @@ export default function EmployeesPage() {
                               <History className="h-4 w-4 mr-2" />
                               Employment History
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCaptureSignature(employee)}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Capture Signature
+                            </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="text-red-600"
                               onClick={() => handleDeleteEmployee(employee.id)}
@@ -613,6 +653,19 @@ export default function EmployeesPage() {
               </Form>
             </div>
           </div>
+        )}
+
+        {/* Signature Modal */}
+        {signatureModal.employee && (
+          <SignatureModal
+            open={signatureModal.open}
+            onOpenChange={(open) => setSignatureModal({ open, employee: open ? signatureModal.employee : null })}
+            onSave={handleSaveSignature}
+            title="Capture Employee Signature"
+            description="Use the signature pad below to capture the employee's digital signature"
+            employeeName={signatureModal.employee.name}
+            initialSignature={signatureModal.employee.signature}
+          />
         )}
       </div>
     </SidebarInset>

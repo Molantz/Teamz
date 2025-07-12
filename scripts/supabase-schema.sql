@@ -15,6 +15,7 @@ CREATE TABLE users (
   position VARCHAR(100),
   employee_id VARCHAR(100),
   join_date DATE,
+  signature TEXT,
   notes TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

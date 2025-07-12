@@ -56,7 +56,6 @@ export function ViewReportsModal({ open, onOpenChange, onSubmit }: ViewReportsMo
     setIsLoading(true)
     
     try {
-      // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       const reportData = {
@@ -97,7 +96,6 @@ export function ViewReportsModal({ open, onOpenChange, onSubmit }: ViewReportsMo
     setIsLoading(true)
     
     try {
-      // Simulate download
       await new Promise(resolve => setTimeout(resolve, 1000))
       
       toast.success("Report downloaded successfully")
@@ -258,9 +256,10 @@ export function ViewReportsModal({ open, onOpenChange, onSubmit }: ViewReportsMo
                   <CardContent className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
-                        {reportTypes.find(r => r.id === report.type)?.icon && (
-                          <reportTypes.find(r => r.id === report.type)!.icon className="h-5 w-5 text-blue-600" />
-                        )}
+                        {(() => {
+                          const Icon = reportTypes.find((r: typeof reportTypes[number]) => r.id === report.type)?.icon;
+                          return Icon ? <Icon className="h-5 w-5 text-blue-600" /> : null;
+                        })()}
                         <div>
                           <div className="font-medium">{report.name}</div>
                           <div className="text-sm text-muted-foreground">
