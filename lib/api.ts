@@ -1,4 +1,20 @@
-import { supabase, User, Asset, Incident, Request, Assignment, Department } from './supabase'
+import { 
+  supabase, 
+  User, 
+  Asset, 
+  Incident, 
+  Request, 
+  Assignment, 
+  Department, 
+  DepartmentBudgetHistory, 
+  DepartmentResource, 
+  DepartmentActivity, 
+  DepartmentGoal, 
+  DepartmentDocument, 
+  DepartmentCommunication, 
+  DepartmentWorkflow, 
+  DepartmentIntegration 
+} from './supabase'
 
 // Users API
 export const usersApi = {
@@ -329,6 +345,337 @@ export const departmentsApi = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase
       .from('departments')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Budget History
+  async getBudgetHistory(departmentId: string): Promise<DepartmentBudgetHistory[]> {
+    const { data, error } = await supabase
+      .from('department_budget_history')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('fiscal_year', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addBudgetHistory(budgetData: Partial<DepartmentBudgetHistory>): Promise<DepartmentBudgetHistory> {
+    const { data, error } = await supabase
+      .from('department_budget_history')
+      .insert([budgetData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  // Department Resources
+  async getResources(departmentId: string): Promise<DepartmentResource[]> {
+    const { data, error } = await supabase
+      .from('department_resources')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addResource(resourceData: Partial<DepartmentResource>): Promise<DepartmentResource> {
+    const { data, error } = await supabase
+      .from('department_resources')
+      .insert([resourceData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateResource(id: string, resourceData: Partial<DepartmentResource>): Promise<DepartmentResource> {
+    const { data, error } = await supabase
+      .from('department_resources')
+      .update(resourceData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteResource(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_resources')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Activities
+  async getActivities(departmentId: string): Promise<DepartmentActivity[]> {
+    const { data, error } = await supabase
+      .from('department_activities')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('start_date', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addActivity(activityData: Partial<DepartmentActivity>): Promise<DepartmentActivity> {
+    const { data, error } = await supabase
+      .from('department_activities')
+      .insert([activityData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateActivity(id: string, activityData: Partial<DepartmentActivity>): Promise<DepartmentActivity> {
+    const { data, error } = await supabase
+      .from('department_activities')
+      .update(activityData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteActivity(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_activities')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Goals
+  async getGoals(departmentId: string): Promise<DepartmentGoal[]> {
+    const { data, error } = await supabase
+      .from('department_goals')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('target_date', { ascending: true })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addGoal(goalData: Partial<DepartmentGoal>): Promise<DepartmentGoal> {
+    const { data, error } = await supabase
+      .from('department_goals')
+      .insert([goalData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateGoal(id: string, goalData: Partial<DepartmentGoal>): Promise<DepartmentGoal> {
+    const { data, error } = await supabase
+      .from('department_goals')
+      .update(goalData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteGoal(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_goals')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Documents
+  async getDocuments(departmentId: string): Promise<DepartmentDocument[]> {
+    const { data, error } = await supabase
+      .from('department_documents')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addDocument(documentData: Partial<DepartmentDocument>): Promise<DepartmentDocument> {
+    const { data, error } = await supabase
+      .from('department_documents')
+      .insert([documentData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateDocument(id: string, documentData: Partial<DepartmentDocument>): Promise<DepartmentDocument> {
+    const { data, error } = await supabase
+      .from('department_documents')
+      .update(documentData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteDocument(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_documents')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Communication
+  async getCommunicationChannels(departmentId: string): Promise<DepartmentCommunication[]> {
+    const { data, error } = await supabase
+      .from('department_communication')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addCommunicationChannel(channelData: Partial<DepartmentCommunication>): Promise<DepartmentCommunication> {
+    const { data, error } = await supabase
+      .from('department_communication')
+      .insert([channelData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateCommunicationChannel(id: string, channelData: Partial<DepartmentCommunication>): Promise<DepartmentCommunication> {
+    const { data, error } = await supabase
+      .from('department_communication')
+      .update(channelData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteCommunicationChannel(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_communication')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Workflows
+  async getWorkflows(departmentId: string): Promise<DepartmentWorkflow[]> {
+    const { data, error } = await supabase
+      .from('department_workflows')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addWorkflow(workflowData: Partial<DepartmentWorkflow>): Promise<DepartmentWorkflow> {
+    const { data, error } = await supabase
+      .from('department_workflows')
+      .insert([workflowData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateWorkflow(id: string, workflowData: Partial<DepartmentWorkflow>): Promise<DepartmentWorkflow> {
+    const { data, error } = await supabase
+      .from('department_workflows')
+      .update(workflowData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteWorkflow(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_workflows')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  },
+
+  // Department Integrations
+  async getIntegrations(departmentId: string): Promise<DepartmentIntegration[]> {
+    const { data, error } = await supabase
+      .from('department_integrations')
+      .select('*')
+      .eq('department_id', departmentId)
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async addIntegration(integrationData: Partial<DepartmentIntegration>): Promise<DepartmentIntegration> {
+    const { data, error } = await supabase
+      .from('department_integrations')
+      .insert([integrationData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async updateIntegration(id: string, integrationData: Partial<DepartmentIntegration>): Promise<DepartmentIntegration> {
+    const { data, error } = await supabase
+      .from('department_integrations')
+      .update(integrationData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async deleteIntegration(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('department_integrations')
       .delete()
       .eq('id', id)
     

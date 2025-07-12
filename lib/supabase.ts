@@ -106,8 +106,136 @@ export interface Department {
   code: string
   manager_id?: string
   budget?: number
+  budget_utilization?: number
   location?: string
   description?: string
+  status?: string
+  parent_department_id?: string
+  level?: number
+  employee_count?: number
+  device_count?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentBudgetHistory {
+  id: string
+  department_id: string
+  fiscal_year: string
+  budget_amount: number
+  spent_amount: number
+  utilization_percentage: number
+  notes?: string
+  created_by: string
+  created_at: string
+}
+
+export interface DepartmentResource {
+  id: string
+  department_id: string
+  resource_type: string
+  resource_id?: string
+  resource_name: string
+  quantity: number
+  cost_per_unit?: number
+  total_cost?: number
+  assigned_date: string
+  status: string
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentActivity {
+  id: string
+  department_id: string
+  activity_type: string
+  title: string
+  description?: string
+  start_date?: string
+  end_date?: string
+  start_time?: string
+  end_time?: string
+  location?: string
+  attendees?: string[]
+  status: string
+  priority: string
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentGoal {
+  id: string
+  department_id: string
+  goal_type: string
+  title: string
+  description?: string
+  target_value?: number
+  current_value?: number
+  unit?: string
+  target_date?: string
+  status: string
+  progress_percentage?: number
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentDocument {
+  id: string
+  department_id: string
+  document_type: string
+  title: string
+  description?: string
+  file_url: string
+  file_size?: number
+  mime_type?: string
+  version: string
+  status: string
+  expiry_date?: string
+  uploaded_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentCommunication {
+  id: string
+  department_id: string
+  channel_type: string
+  channel_name: string
+  channel_url?: string
+  description?: string
+  is_active: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentWorkflow {
+  id: string
+  department_id: string
+  workflow_name: string
+  workflow_type: string
+  description?: string
+  steps: any[]
+  is_active: boolean
+  created_by: string
+  created_at: string
+  updated_at: string
+}
+
+export interface DepartmentIntegration {
+  id: string
+  department_id: string
+  integration_type: string
+  integration_name: string
+  api_endpoint?: string
+  api_key_hash?: string
+  configuration?: any
+  is_active: boolean
+  last_sync?: string
+  created_by: string
   created_at: string
   updated_at: string
 } 
