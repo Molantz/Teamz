@@ -1,9 +1,16 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('Missing Supabase environment variables. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+}
+
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key'
+)
 
 // Database types
 export interface User {
@@ -238,4 +245,105 @@ export interface DepartmentIntegration {
   created_by: string
   created_at: string
   updated_at: string
+}
+
+// PR Management Interfaces
+export interface PurchaseRequest {
+  id: string
+  pr_number: string
+  title: string
+  description?: string
+  requester_id: string
+  assigned_to_id?: string
+  department_id?: string
+  priority: string
+  status: string
+  total_estimated_cost?: number
+  total_actual_cost?: number
+  currency: string
+  expected_delivery_date?: string
+  actual_delivery_date?: string
+  remarks?: string
+  rejection_reason?: string
+  created_at: string
+  updated_at: string
+  submitted_at?: string
+  approved_at?: string
+  delivered_at?: string
+}
+
+export interface PRItem {
+  id: string
+  pr_id: string
+  item_name: string
+  description?: string
+  category: string
+  subcategory?: string
+  quantity: number
+  unit_price?: number
+  total_price?: number
+  supplier?: string
+  model_number?: string
+  specifications?: any
+  status: string
+  delivery_status: string
+  inventory_item_id?: string
+  assigned_to_employee_id?: string
+  remarks?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface PRStatusHistory {
+  id: string
+  pr_id: string
+  status: string
+  remarks?: string
+  changed_by: string
+  changed_at: string
+  previous_status?: string
+  next_status?: string
+}
+
+export interface PRApproval {
+  id: string
+  pr_id: string
+  approver_id: string
+  approval_level: number
+  status: string
+  remarks?: string
+  approved_at?: string
+  created_at: string
+}
+
+export interface PRNotification {
+  id: string
+  pr_id: string
+  notification_type: string
+  recipient_id: string
+  title: string
+  message: string
+  is_read: boolean
+  sent_at: string
+  read_at?: string
+}
+
+export interface PRAttachment {
+  id: string
+  pr_id: string
+  file_name: string
+  file_url: string
+  file_size?: number
+  mime_type?: string
+  uploaded_by: string
+  uploaded_at: string
+}
+
+export interface PRComment {
+  id: string
+  pr_id: string
+  commenter_id: string
+  comment: string
+  is_internal: boolean
+  created_at: string
 } 

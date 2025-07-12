@@ -364,6 +364,113 @@ CREATE TABLE system_settings (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Purchase Requests (PR) Management
+CREATE TABLE purchase_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_number VARCHAR(50) UNIQUE NOT NULL, -- Manually input PR number
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    requester_id UUID REFERENCES employees(id) NOT NULL,
+    assigned_to_id UUID REFERENCES employees(id), -- Assigned employee/department
+    department_id UUID REFERENCES departments(id),
+    priority VARCHAR(20) DEFAULT 'medium', -- 'low', 'medium', 'high', 'urgent'
+    status VARCHAR(20) DEFAULT 'draft', -- 'draft', 'submitted', 'under_review', 'approved', 'rejected', 'in_progress', 'delivered', 'completed', 'cancelled'
+    total_estimated_cost DECIMAL(12,2) DEFAULT 0,
+    total_actual_cost DECIMAL(12,2) DEFAULT 0,
+    currency VARCHAR(3) DEFAULT 'USD',
+    expected_delivery_date DATE,
+    actual_delivery_date DATE,
+    remarks TEXT,
+    rejection_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    submitted_at TIMESTAMP WITH TIME ZONE,
+    approved_at TIMESTAMP WITH TIME ZONE,
+    delivered_at TIMESTAMP WITH TIME ZONE
+);
+
+-- PR Items (Multiple items per PR)
+CREATE TABLE pr_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_id UUID REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    item_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(50) NOT NULL, -- 'devices', 'software', 'service', 'consumables', 'equipment', 'accessories'
+    subcategory VARCHAR(100),
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price DECIMAL(10,2),
+    total_price DECIMAL(10,2),
+    supplier VARCHAR(255),
+    model_number VARCHAR(100),
+    specifications JSONB, -- Technical specifications
+    status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'approved', 'ordered', 'received', 'delivered', 'rejected'
+    delivery_status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'in_transit', 'delivered', 'returned'
+    inventory_item_id UUID REFERENCES devices(id), -- Link to inventory when delivered
+    assigned_to_employee_id UUID REFERENCES employees(id), -- Device assignment
+    remarks TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- PR Status History
+CREATE TABLE pr_status_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_id UUID REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL,
+    remarks TEXT,
+    changed_by UUID REFERENCES employees(id),
+    changed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    previous_status VARCHAR(20),
+    next_status VARCHAR(20)
+);
+
+-- PR Approvals
+CREATE TABLE pr_approvals (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_id UUID REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    approver_id UUID REFERENCES employees(id),
+    approval_level INTEGER DEFAULT 1, -- 1, 2, 3 for different approval levels
+    status VARCHAR(20) DEFAULT 'pending', -- 'pending', 'approved', 'rejected'
+    remarks TEXT,
+    approved_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- PR Notifications
+CREATE TABLE pr_notifications (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_id UUID REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    notification_type VARCHAR(50) NOT NULL, -- 'status_change', 'approval_required', 'delivery_update', 'incomplete_info'
+    recipient_id UUID REFERENCES employees(id),
+    title VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT false,
+    sent_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    read_at TIMESTAMP WITH TIME ZONE
+);
+
+-- PR Attachments
+CREATE TABLE pr_attachments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_id UUID REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    file_name VARCHAR(255) NOT NULL,
+    file_url TEXT NOT NULL,
+    file_size INTEGER,
+    mime_type VARCHAR(100),
+    uploaded_by UUID REFERENCES employees(id),
+    uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- PR Comments
+CREATE TABLE pr_comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    pr_id UUID REFERENCES purchase_requests(id) ON DELETE CASCADE,
+    commenter_id UUID REFERENCES employees(id),
+    comment TEXT NOT NULL,
+    is_internal BOOLEAN DEFAULT false, -- Internal comments vs external
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX idx_employees_department ON employees(department_id);
 CREATE INDEX idx_employees_supervisor ON employees(supervisor_id);
@@ -423,6 +530,53 @@ CREATE INDEX idx_department_integrations_department ON department_integrations(d
 CREATE INDEX idx_department_integrations_type ON department_integrations(integration_type);
 CREATE INDEX idx_department_integrations_active ON department_integrations(is_active);
 
+-- PR Management indexes
+CREATE INDEX idx_purchase_requests_pr_number ON purchase_requests(pr_number);
+CREATE INDEX idx_purchase_requests_status ON purchase_requests(status);
+CREATE INDEX idx_purchase_requests_requester ON purchase_requests(requester_id);
+CREATE INDEX idx_purchase_requests_assigned_to ON purchase_requests(assigned_to_id);
+CREATE INDEX idx_purchase_requests_department ON purchase_requests(department_id);
+CREATE INDEX idx_purchase_requests_priority ON purchase_requests(priority);
+CREATE INDEX idx_purchase_requests_created_at ON purchase_requests(created_at);
+CREATE INDEX idx_purchase_requests_expected_delivery ON purchase_requests(expected_delivery_date);
+
+-- PR Items indexes
+CREATE INDEX idx_pr_items_pr_id ON pr_items(pr_id);
+CREATE INDEX idx_pr_items_category ON pr_items(category);
+CREATE INDEX idx_pr_items_status ON pr_items(status);
+CREATE INDEX idx_pr_items_delivery_status ON pr_items(delivery_status);
+CREATE INDEX idx_pr_items_inventory_item ON pr_items(inventory_item_id);
+CREATE INDEX idx_pr_items_assigned_employee ON pr_items(assigned_to_employee_id);
+
+-- PR Status History indexes
+CREATE INDEX idx_pr_status_history_pr_id ON pr_status_history(pr_id);
+CREATE INDEX idx_pr_status_history_status ON pr_status_history(status);
+CREATE INDEX idx_pr_status_history_changed_by ON pr_status_history(changed_by);
+CREATE INDEX idx_pr_status_history_changed_at ON pr_status_history(changed_at);
+
+-- PR Approvals indexes
+CREATE INDEX idx_pr_approvals_pr_id ON pr_approvals(pr_id);
+CREATE INDEX idx_pr_approvals_approver ON pr_approvals(approver_id);
+CREATE INDEX idx_pr_approvals_status ON pr_approvals(status);
+CREATE INDEX idx_pr_approvals_level ON pr_approvals(approval_level);
+
+-- PR Notifications indexes
+CREATE INDEX idx_pr_notifications_pr_id ON pr_notifications(pr_id);
+CREATE INDEX idx_pr_notifications_recipient ON pr_notifications(recipient_id);
+CREATE INDEX idx_pr_notifications_type ON pr_notifications(notification_type);
+CREATE INDEX idx_pr_notifications_read ON pr_notifications(is_read);
+CREATE INDEX idx_pr_notifications_sent_at ON pr_notifications(sent_at);
+
+-- PR Attachments indexes
+CREATE INDEX idx_pr_attachments_pr_id ON pr_attachments(pr_id);
+CREATE INDEX idx_pr_attachments_uploaded_by ON pr_attachments(uploaded_by);
+
+-- PR Comments indexes
+CREATE INDEX idx_pr_comments_pr_id ON pr_comments(pr_id);
+CREATE INDEX idx_pr_comments_commenter ON pr_comments(commenter_id);
+CREATE INDEX idx_pr_comments_internal ON pr_comments(is_internal);
+CREATE INDEX idx_pr_comments_created_at ON pr_comments(created_at);
+
 -- Other important indexes
 CREATE INDEX idx_devices_assigned_to ON devices(assigned_to);
 CREATE INDEX idx_devices_status ON devices(status);
@@ -460,6 +614,15 @@ ALTER TABLE department_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE department_communication ENABLE ROW LEVEL SECURITY;
 ALTER TABLE department_workflows ENABLE ROW LEVEL SECURITY;
 ALTER TABLE department_integrations ENABLE ROW LEVEL SECURITY;
+
+-- Enable RLS for PR Management tables
+ALTER TABLE purchase_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_status_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_approvals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_attachments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pr_comments ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies (Basic examples - customize based on your needs)
 CREATE POLICY "Users can view their own data" ON users FOR SELECT USING (auth.uid() = id);
@@ -561,3 +724,81 @@ INSERT INTO department_integrations (department_id, integration_type, integratio
 ('dept-004', 'marketing', 'HubSpot CRM', 'https://api.hubapi.com', '{"api_key": "hash_placeholder", "portal_id": "123456"}', true, 'emp-004'),
 ('dept-005', 'finance', 'QuickBooks API', 'https://quickbooks.api.intuit.com/v3', '{"client_id": "hash_placeholder", "client_secret": "hash_placeholder"}', true, 'emp-005'),
 ('dept-006', 'operations', 'ServiceNow Integration', 'https://company.service-now.com/api/now', '{"username": "hash_placeholder", "password": "hash_placeholder"}', true, 'emp-006');
+
+-- Sample data for PR Management System
+INSERT INTO purchase_requests (id, pr_number, title, description, requester_id, assigned_to_id, department_id, priority, status, total_estimated_cost, total_actual_cost, expected_delivery_date, remarks, created_at) VALUES
+('pr-001', 'PR-2024-001', 'IT Equipment for New Development Team', 'Purchase of laptops and accessories for new development team members', 'emp-003', 'emp-001', 'dept-003', 'high', 'approved', 15000.00, 14850.00, '2024-02-15', 'Approved for development team expansion', '2024-01-15T00:00:00Z'),
+('pr-002', 'PR-2024-002', 'Software Licenses Renewal', 'Annual renewal of software licenses for all departments', 'emp-001', 'emp-001', 'dept-001', 'medium', 'in_progress', 8500.00, 0.00, '2024-03-01', 'Pending vendor quotes', '2024-01-20T00:00:00Z'),
+('pr-003', 'PR-2024-003', 'Office Consumables', 'Monthly office supplies and consumables', 'emp-002', 'emp-002', 'dept-002', 'low', 'delivered', 1200.00, 1180.00, '2024-01-25', 'Delivered on time', '2024-01-10T00:00:00Z'),
+('pr-004', 'PR-2024-004', 'Network Security Equipment', 'Upgrade network security infrastructure', 'emp-001', 'emp-001', 'dept-001', 'urgent', 'under_review', 25000.00, 0.00, '2024-02-28', 'Security audit requirement', '2024-01-25T00:00:00Z'),
+('pr-005', 'PR-2024-005', 'Marketing Software Tools', 'New marketing automation and analytics tools', 'emp-004', 'emp-004', 'dept-004', 'medium', 'draft', 5000.00, 0.00, '2024-03-15', 'Draft - pending budget approval', '2024-01-28T00:00:00Z');
+
+-- Sample PR Items
+INSERT INTO pr_items (id, pr_id, item_name, description, category, subcategory, quantity, unit_price, total_price, supplier, model_number, status, delivery_status, remarks) VALUES
+-- PR-001 Items
+('item-001', 'pr-001', 'MacBook Pro 16-inch', 'High-performance laptop for development work', 'devices', 'laptops', 5, 2500.00, 12500.00, 'Apple Store', 'MBP16-M2', 'delivered', 'delivered', 'All units delivered and assigned'),
+('item-002', 'pr-001', 'Dell Monitor 27-inch', 'External monitors for development team', 'devices', 'monitors', 5, 300.00, 1500.00, 'Dell Inc.', 'P2719H', 'delivered', 'delivered', 'Monitors installed'),
+('item-003', 'pr-001', 'Wireless Mouse', 'Ergonomic wireless mice', 'accessories', 'input_devices', 5, 50.00, 250.00, 'Logitech', 'MX Master 3', 'delivered', 'delivered', 'Accessories distributed'),
+
+-- PR-002 Items
+('item-004', 'pr-002', 'Microsoft 365 Enterprise', 'Annual subscription for all departments', 'software', 'productivity', 1, 8500.00, 8500.00, 'Microsoft', 'M365-E3', 'ordered', 'pending', 'License renewal in progress'),
+('item-005', 'pr-002', 'Adobe Creative Suite', 'Design software for marketing team', 'software', 'design', 1, 2500.00, 2500.00, 'Adobe', 'CC-2024', 'pending', 'pending', 'Awaiting approval'),
+
+-- PR-003 Items
+('item-006', 'pr-003', 'Printer Paper A4', 'Office paper for all departments', 'consumables', 'paper', 50, 8.00, 400.00, 'Office Supplies Co.', 'A4-80GSM', 'delivered', 'delivered', 'Delivered to storage'),
+('item-007', 'pr-003', 'Printer Toner Cartridges', 'Toner cartridges for office printers', 'consumables', 'toner', 10, 45.00, 450.00, 'HP Supplies', 'HP-26A', 'delivered', 'delivered', 'Installed in printers'),
+('item-008', 'pr-003', 'Staples and Paper Clips', 'Office stationery supplies', 'consumables', 'stationery', 100, 3.30, 330.00, 'Office Supplies Co.', 'STAPLE-24/6', 'delivered', 'delivered', 'Distributed to departments'),
+
+-- PR-004 Items
+('item-009', 'pr-004', 'Cisco Firewall', 'Enterprise-grade network firewall', 'equipment', 'network_security', 2, 8000.00, 16000.00, 'Cisco Systems', 'ASA-5516-X', 'pending', 'pending', 'Security review required'),
+('item-010', 'pr-004', 'Network Switches', 'Managed network switches', 'equipment', 'networking', 4, 1500.00, 6000.00, 'Cisco Systems', 'Catalyst-2960', 'pending', 'pending', 'Infrastructure upgrade'),
+('item-011', 'pr-004', 'Security Cameras', 'IP security cameras for office', 'equipment', 'surveillance', 8, 375.00, 3000.00, 'Hikvision', 'DS-2CD2142FWD-I', 'pending', 'pending', 'Security enhancement'),
+
+-- PR-005 Items
+('item-012', 'pr-005', 'HubSpot Marketing Hub', 'Marketing automation platform', 'software', 'marketing_automation', 1, 3000.00, 3000.00, 'HubSpot', 'Marketing-Hub-Pro', 'draft', 'pending', 'Marketing team request'),
+('item-013', 'pr-005', 'Google Analytics Premium', 'Advanced analytics and reporting', 'software', 'analytics', 1, 2000.00, 2000.00, 'Google', 'GA-360', 'draft', 'pending', 'Data analysis tools');
+
+-- Sample PR Status History
+INSERT INTO pr_status_history (pr_id, status, remarks, changed_by, previous_status, next_status) VALUES
+('pr-001', 'draft', 'Initial PR created', 'emp-003', NULL, 'submitted'),
+('pr-001', 'submitted', 'PR submitted for review', 'emp-003', 'draft', 'under_review'),
+('pr-001', 'under_review', 'Under IT department review', 'emp-001', 'submitted', 'approved'),
+('pr-001', 'approved', 'Approved by IT manager', 'emp-001', 'under_review', 'in_progress'),
+('pr-001', 'in_progress', 'Order placed with suppliers', 'emp-001', 'approved', 'delivered'),
+('pr-001', 'delivered', 'All items delivered and assigned', 'emp-001', 'in_progress', 'completed'),
+('pr-002', 'draft', 'Software license renewal PR', 'emp-001', NULL, 'submitted'),
+('pr-002', 'submitted', 'Submitted for approval', 'emp-001', 'draft', 'under_review'),
+('pr-002', 'under_review', 'Under budget review', 'emp-005', 'submitted', 'approved'),
+('pr-002', 'approved', 'Budget approved', 'emp-005', 'under_review', 'in_progress'),
+('pr-003', 'draft', 'Monthly office supplies', 'emp-002', NULL, 'submitted'),
+('pr-003', 'submitted', 'Submitted for processing', 'emp-002', 'draft', 'approved'),
+('pr-003', 'approved', 'Auto-approved for consumables', 'emp-002', 'submitted', 'in_progress'),
+('pr-003', 'in_progress', 'Order placed', 'emp-002', 'approved', 'delivered'),
+('pr-003', 'delivered', 'Supplies delivered', 'emp-002', 'in_progress', 'completed');
+
+-- Sample PR Approvals
+INSERT INTO pr_approvals (pr_id, approver_id, approval_level, status, remarks, approved_at) VALUES
+('pr-001', 'emp-001', 1, 'approved', 'Approved for development team needs', '2024-01-16T10:00:00Z'),
+('pr-002', 'emp-005', 1, 'approved', 'Budget approved for software licenses', '2024-01-21T14:30:00Z'),
+('pr-003', 'emp-002', 1, 'approved', 'Auto-approved consumables', '2024-01-11T09:15:00Z'),
+('pr-004', 'emp-001', 1, 'pending', 'Under security review', NULL),
+('pr-005', 'emp-004', 1, 'pending', 'Draft - pending budget allocation', NULL);
+
+-- Sample PR Notifications
+INSERT INTO pr_notifications (pr_id, notification_type, recipient_id, title, message, is_read) VALUES
+('pr-001', 'status_change', 'emp-003', 'PR-2024-001 Status Updated', 'Your PR has been approved and is now in progress', false),
+('pr-001', 'delivery_update', 'emp-003', 'PR-2024-001 Items Delivered', 'All items from PR-2024-001 have been delivered and assigned', false),
+('pr-002', 'approval_required', 'emp-005', 'PR-2024-002 Approval Required', 'Software license renewal PR requires your approval', false),
+('pr-004', 'incomplete_info', 'emp-001', 'PR-2024-004 Incomplete Information', 'Security equipment PR needs additional specifications', false),
+('pr-005', 'status_change', 'emp-004', 'PR-2024-005 Created', 'Your PR has been created and is in draft status', false);
+
+-- Sample PR Comments
+INSERT INTO pr_comments (pr_id, commenter_id, comment, is_internal) VALUES
+('pr-001', 'emp-003', 'Need these laptops for the new development team starting next month', false),
+('pr-001', 'emp-001', 'Approved - budget available and equipment needed', true),
+('pr-002', 'emp-001', 'Annual software license renewal - all departments covered', false),
+('pr-002', 'emp-005', 'Budget approved - proceed with renewal', true),
+('pr-003', 'emp-002', 'Monthly office supplies - standard order', false),
+('pr-004', 'emp-001', 'Security infrastructure upgrade required for compliance', false),
+('pr-004', 'emp-001', 'Need additional firewall specifications for approval', true),
+('pr-005', 'emp-004', 'Marketing tools needed for Q2 campaigns', false);
