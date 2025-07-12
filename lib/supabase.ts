@@ -98,4 +98,16 @@ export interface Assignment {
   status: string
   created_at: string
   updated_at: string
+}
+
+export interface Department {
+  id: string
+  name: string
+  code: string
+  manager_id?: string
+  budget?: number
+  location?: string
+  description?: string
+  created_at: string
+  updated_at: string
 } 

@@ -1,4 +1,4 @@
-import { supabase, User, Asset, Incident, Request, Assignment } from './supabase'
+import { supabase, User, Asset, Incident, Request, Assignment, Department } from './supabase'
 
 // Users API
 export const usersApi = {
@@ -273,6 +273,62 @@ export const assignmentsApi = {
   async delete(id: string): Promise<void> {
     const { error } = await supabase
       .from('assignments')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+}
+
+// Departments API
+export const departmentsApi = {
+  async getAll(): Promise<Department[]> {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<Department | null> {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(departmentData: Partial<Department>): Promise<Department> {
+    const { data, error } = await supabase
+      .from('departments')
+      .insert([departmentData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, departmentData: Partial<Department>): Promise<Department> {
+    const { data, error } = await supabase
+      .from('departments')
+      .update(departmentData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('departments')
       .delete()
       .eq('id', id)
     
