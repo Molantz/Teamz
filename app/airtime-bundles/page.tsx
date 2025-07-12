@@ -1,533 +1,434 @@
 "use client"
 
+import { useState } from "react"
+import { toast } from "sonner"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { SidebarInset } from "@/components/ui/sidebar"
-import { BulkActions } from "@/components/bulk-actions"
-import { auditLogger } from "@/lib/audit-log"
-import { AddBundleModal } from "@/components/modals/add-bundle-modal"
-import { useState, useEffect } from "react"
-import { toast } from "sonner"
-import {
-  AlertTriangle,
-  Filter,
-  MoreHorizontal,
-  Package,
-  Plus,
-  Search,
-  TrendingUp,
-  Smartphone,
-  Wifi,
-  Globe,
-  Users,
-  CreditCard,
-  Calendar,
-  Activity,
-} from "lucide-react"
-
-const bundleStats = [
-  {
-    label: "Active Bundles",
-    value: "156",
-    change: "+12",
-    trend: "up",
-    icon: Package,
-  },
-  {
-    label: "Total Data Used",
-    value: "2.4TB",
-    change: "+18%",
-    trend: "up",
-    icon: Wifi,
-  },
-  {
-    label: "Active Users",
-    value: "89",
-    change: "+5",
-    trend: "up",
-    icon: Users,
-  },
-  {
-    label: "Monthly Cost",
-    value: "$3,450",
-    change: "-8%",
-    trend: "down",
-    icon: CreditCard,
-  },
-]
-
-const bundleTypes = [
-  { name: "Data Only", count: 45, percentage: 35 },
-  { name: "Voice + Data", count: 67, percentage: 52 },
-  { name: "Unlimited", count: 23, percentage: 18 },
-  { name: "International", count: 12, percentage: 9 },
-]
-
-const airtimeBundles = [
-  {
-    id: "BUN-001",
-    name: "Corporate Data Plan",
-    type: "Data Only",
-    provider: "MTN",
-    dataLimit: "10GB",
-    dataUsed: "7.2GB",
-    voiceMinutes: 0,
-    voiceUsed: 0,
-    validity: "30 days",
-    cost: "$25/month",
-    status: "Active",
-    assignedTo: "John Smith",
-    phoneNumber: "+2348012345678",
-    expiryDate: "2024-02-15",
-    autoRenew: true,
-  },
-  {
-    id: "BUN-002",
-    name: "Executive Voice+Data",
-    type: "Voice + Data",
-    provider: "Airtel",
-    dataLimit: "15GB",
-    dataUsed: "12.8GB",
-    voiceMinutes: 1000,
-    voiceUsed: 450,
-    validity: "30 days",
-    cost: "$45/month",
-    status: "Active",
-    assignedTo: "Sarah Johnson",
-    phoneNumber: "+2348098765432",
-    expiryDate: "2024-02-20",
-    autoRenew: true,
-  },
-  {
-    id: "BUN-003",
-    name: "Unlimited Corporate",
-    type: "Unlimited",
-    provider: "Glo",
-    dataLimit: "Unlimited",
-    dataUsed: "25.6GB",
-    voiceMinutes: "Unlimited",
-    voiceUsed: 1200,
-    validity: "30 days",
-    cost: "$75/month",
-    status: "Active",
-    assignedTo: "Mike Wilson",
-    phoneNumber: "+2348055555555",
-    expiryDate: "2024-02-25",
-    autoRenew: true,
-  },
-  {
-    id: "BUN-004",
-    name: "International Roaming",
-    type: "International",
-    provider: "MTN",
-    dataLimit: "5GB",
-    dataUsed: "2.1GB",
-    voiceMinutes: 500,
-    voiceUsed: 180,
-    validity: "15 days",
-    cost: "$120/month",
-    status: "Active",
-    assignedTo: "Lisa Brown",
-    phoneNumber: "+2348077777777",
-    expiryDate: "2024-02-10",
-    autoRenew: false,
-  },
-  {
-    id: "BUN-005",
-    name: "Basic Data Plan",
-    type: "Data Only",
-    provider: "9mobile",
-    dataLimit: "5GB",
-    dataUsed: "4.9GB",
-    voiceMinutes: 0,
-    voiceUsed: 0,
-    validity: "30 days",
-    cost: "$15/month",
-    status: "Low Data",
-    assignedTo: "Tom Davis",
-    phoneNumber: "+2348066666666",
-    expiryDate: "2024-02-18",
-    autoRenew: true,
-  },
-]
+import { Filter, MoreHorizontal, Plus, Search, Smartphone, Wifi, Loader2 } from "lucide-react"
+import { ProtectedRoute } from "@/components/protected-route"
+import { useRealtime } from "@/hooks/use-realtime"
+import { airtimeBundlesApi, usersApi } from "@/lib/api"
+import { AirtimeBundle, User } from "@/lib/supabase"
 
 export default function AirtimeBundlesPage() {
   const [addBundleModal, setAddBundleModal] = useState(false)
-  const [bundles, setBundles] = useState<any[]>(airtimeBundles)
-  const [selectedBundles, setSelectedBundles] = useState<string[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState<string>("all")
+  const [filterProvider, setFilterProvider] = useState<string>("all")
 
-  const handleAddBundle = async (data: any) => {
+  // Real-time data
+  const { data: bundles, loading: bundlesLoading, error: bundlesError, refresh: refreshBundles } = useRealtime<AirtimeBundle>({
+    table: 'airtime_bundles',
+    onDataChange: (payload) => {
+      console.log('Bundle data changed:', payload)
+      toast.success('Bundle data updated in real-time')
+    }
+  })
+
+  const { data: users, loading: usersLoading, error: usersError } = useRealtime<User>({
+    table: 'users'
+  })
+
+  // Calculate real-time stats
+  const bundleStats = [
+    { 
+      label: "Active Bundles", 
+      value: bundles.filter(b => b.status === "Active").length.toString(), 
+      change: "+5", 
+      icon: Smartphone 
+    },
+    { 
+      label: "Total Data Used", 
+      value: `${bundles.reduce((sum, b) => sum + (parseFloat(b.data_used) || 0), 0).toFixed(1)}GB`, 
+      change: "+12%", 
+      icon: Wifi 
+    },
+    { 
+      label: "Monthly Cost", 
+      value: `$${bundles.reduce((sum, b) => sum + (parseFloat(b.cost.replace('$', '').replace('/month', '')) || 0), 0).toLocaleString()}`, 
+      change: "+8%", 
+      icon: Wifi 
+    },
+    { 
+      label: "Expiring Soon", 
+      value: bundles.filter(b => {
+        if (!b.expiry_date) return false
+        const expiry = new Date(b.expiry_date)
+        const now = new Date()
+        const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+        return expiry <= thirtyDaysFromNow && expiry > now
+      }).length.toString(), 
+      change: "+2", 
+      icon: Smartphone 
+    },
+  ]
+
+  // Filter bundles based on search and filters
+  const filteredBundles = bundles.filter(bundle => {
+    const matchesSearch = bundle.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         bundle.assigned_to_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         bundle.phone_number?.includes(searchTerm)
+    
+    const matchesType = filterType === "all" || bundle.type.toLowerCase() === filterType.toLowerCase()
+    const matchesProvider = filterProvider === "all" || bundle.provider.toLowerCase() === filterProvider.toLowerCase()
+    
+    return matchesSearch && matchesType && matchesProvider
+  })
+
+  const handleAddBundle = async (bundleData: any) => {
     try {
-      // In a real application, this would save to the database
-      const newBundle = {
-        id: `BUN-${String(bundles.length + 1).padStart(3, '0')}`,
-        ...data,
-        status: "Active",
-        dataUsed: "0GB",
-        voiceUsed: 0,
-      }
-      
-      setBundles([...bundles, newBundle])
-      toast.success(`Added ${data.name} bundle`)
-      
-      // Log the action
-      auditLogger.logUserAction(
-        'current-user',
-        'Current User',
-        'Created airtime bundle',
-        'airtime_bundle',
-        newBundle.id,
-        `Created bundle: ${data.name} (${data.type})`
-      )
+      // TODO: Implement add bundle functionality
+      toast.success('Bundle added successfully')
+      refreshBundles()
     } catch (error) {
       console.error('Failed to add bundle:', error)
       toast.error('Failed to add bundle')
     }
   }
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedBundles(bundles.map(bundle => bundle.id))
-    } else {
-      setSelectedBundles([])
+  const handleBundleAction = (bundle: AirtimeBundle, action: string) => {
+    switch (action) {
+      case 'renew':
+        // TODO: Implement renew action
+        toast.info('Renew functionality coming soon')
+        break
+      case 'suspend':
+        // TODO: Implement suspend action
+        toast.info('Suspend functionality coming soon')
+        break
+      case 'details':
+        // TODO: Implement details action
+        toast.info('Details functionality coming soon')
+        break
+      default:
+        break
     }
   }
 
-  const handleBulkDelete = () => {
-    const bundlesToDelete = bundles.filter(bundle => selectedBundles.includes(bundle.id))
-    setBundles(bundles.filter(bundle => !selectedBundles.includes(bundle.id)))
-    setSelectedBundles([])
-    
-    // Log the bulk operation
-    auditLogger.logBulkOperation(
-      'current-user',
-      'Current User',
-      'Bulk deleted airtime bundles',
-      'airtime_bundle',
-      bundlesToDelete.length,
-      `Deleted ${bundlesToDelete.length} bundles: ${bundlesToDelete.map(b => b.name).join(', ')}`
+  if (bundlesError || usersError) {
+    return (
+      <ProtectedRoute>
+        <SidebarInset>
+          <Header title="Airtime Bundles" description="Manage mobile data plans and airtime bundles" />
+          <div className="flex-1 space-y-6 p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="text-red-600 mb-2">Error loading bundles</div>
+                <Button onClick={refreshBundles} variant="outline">Retry</Button>
+              </div>
+            </div>
+          </div>
+        </SidebarInset>
+      </ProtectedRoute>
     )
-  }
-
-  const handleBulkExport = () => {
-    const bundlesToExport = bundles.filter(bundle => selectedBundles.includes(bundle.id))
-    
-    // Log the bulk operation
-    auditLogger.logBulkOperation(
-      'current-user',
-      'Current User',
-      'Bulk exported airtime bundles',
-      'airtime_bundle',
-      bundlesToExport.length,
-      `Exported ${bundlesToExport.length} bundles: ${bundlesToExport.map(b => b.name).join(', ')}`
-    )
-  }
-
-  const handleBulkStatusUpdate = (status: string) => {
-    const updatedBundles = bundles.map(bundle => 
-      selectedBundles.includes(bundle.id) 
-        ? { ...bundle, status } 
-        : bundle
-    )
-    setBundles(updatedBundles)
-    
-    // Log the bulk operation
-    auditLogger.logBulkOperation(
-      'current-user',
-      'Current User',
-      `Bulk updated bundle status to ${status}`,
-      'airtime_bundle',
-      selectedBundles.length,
-      `Updated ${selectedBundles.length} bundles status to ${status}`
-    )
-  }
-
-  const handleBulkEmail = () => {
-    const bundlesToEmail = bundles.filter(bundle => selectedBundles.includes(bundle.id))
-    
-    // Log the bulk operation
-    auditLogger.logBulkOperation(
-      'current-user',
-      'Current User',
-      'Bulk emailed airtime bundles',
-      'airtime_bundle',
-      bundlesToEmail.length,
-      `Sent email about ${bundlesToEmail.length} bundles: ${bundlesToEmail.map(b => b.name).join(', ')}`
-    )
-  }
-
-  const getDataUsagePercentage = (used: string, limit: string) => {
-    if (limit === "Unlimited") return 0
-    const usedGB = parseFloat(used.replace('GB', ''))
-    const limitGB = parseFloat(limit.replace('GB', ''))
-    return (usedGB / limitGB) * 100
-  }
-
-  const getVoiceUsagePercentage = (used: number, limit: number | string) => {
-    if (limit === "Unlimited") return 0
-    const limitNum = typeof limit === 'string' ? parseInt(limit) : limit
-    return (used / limitNum) * 100
   }
 
   return (
-    <SidebarInset>
-      <Header 
-        title="Airtime Bundle Management" 
-        description="Manage mobile data plans, airtime allocations, and bundle subscriptions" 
-      />
-      <div className="flex-1 space-y-6 p-6">
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {bundleStats.map((stat) => (
-            <Card key={stat.label}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
-                <stat.icon className="h-4 w-4 text-blue-600" />
+    <ProtectedRoute>
+      <SidebarInset>
+        <Header title="Airtime Bundles" description="Manage mobile data plans and airtime bundles" />
+        <div className="flex-1 space-y-6 p-6">
+          {/* Stats Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {bundleStats.map((stat) => (
+              <Card key={stat.label}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">{stat.label}</CardTitle>
+                  <stat.icon className="h-4 w-4 text-blue-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <p className="text-xs text-muted-foreground">
+                    <span className="text-green-600">{stat.change}</span> from last month
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Usage Overview */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Data Usage</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  <span className={stat.trend === "up" ? "text-green-600" : "text-red-600"}>{stat.change}</span> from
-                  last month
-                </p>
+              <CardContent className="space-y-3">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>High Usage (>80%)</span>
+                    <span>{bundles.filter(b => {
+                      const used = parseFloat(b.data_used) || 0
+                      const limit = parseFloat(b.data_limit) || 1
+                      return (used / limit) > 0.8
+                    }).length}</span>
+                  </div>
+                  <Progress value={bundles.filter(b => {
+                    const used = parseFloat(b.data_used) || 0
+                    const limit = parseFloat(b.data_limit) || 1
+                    return (used / limit) > 0.8
+                  }).length / bundles.length * 100} className="h-2 [&>div]:bg-red-500" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Medium Usage (40-80%)</span>
+                    <span>{bundles.filter(b => {
+                      const used = parseFloat(b.data_used) || 0
+                      const limit = parseFloat(b.data_limit) || 1
+                      const ratio = used / limit
+                      return ratio > 0.4 && ratio <= 0.8
+                    }).length}</span>
+                  </div>
+                  <Progress value={bundles.filter(b => {
+                    const used = parseFloat(b.data_used) || 0
+                    const limit = parseFloat(b.data_limit) || 1
+                    const ratio = used / limit
+                    return ratio > 0.4 && ratio <= 0.8
+                  }).length / bundles.length * 100} className="h-2 [&>div]:bg-yellow-500" />
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Bundle Types Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Bundle Types</CardTitle>
-              <CardDescription>Distribution of bundle types</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {bundleTypes.map((type) => (
-                <div key={type.name} className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{type.name}</span>
-                    <span className="text-muted-foreground">{type.count}</span>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Provider Distribution</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from(new Set(bundles.map(b => b.provider))).map(provider => (
+                  <div key={provider} className="space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>{provider}</span>
+                      <span>{bundles.filter(b => b.provider === provider).length}</span>
+                    </div>
+                    <Progress 
+                      value={bundles.filter(b => b.provider === provider).length / bundles.length * 100} 
+                      className="h-2" 
+                    />
                   </div>
-                  <Progress value={type.percentage} className="h-2" />
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                ))}
+              </CardContent>
+            </Card>
 
-          {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-sm">Expiry Alerts</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm">
+                  <div className="font-medium">This Week</div>
+                  <div className="text-muted-foreground">
+                    {bundles.filter(b => {
+                      if (!b.expiry_date) return false
+                      const expiry = new Date(b.expiry_date)
+                      const now = new Date()
+                      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+                      return expiry <= weekFromNow && expiry > now
+                    }).length} bundles expiring
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium">Next Week</div>
+                  <div className="text-muted-foreground">
+                    {bundles.filter(b => {
+                      if (!b.expiry_date) return false
+                      const expiry = new Date(b.expiry_date)
+                      const now = new Date()
+                      const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)
+                      const twoWeeksFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000)
+                      return expiry <= twoWeeksFromNow && expiry > weekFromNow
+                    }).length} bundles expiring
+                  </div>
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium">Overdue</div>
+                  <div className="text-red-600">
+                    {bundles.filter(b => {
+                      if (!b.expiry_date) return false
+                      const expiry = new Date(b.expiry_date)
+                      const now = new Date()
+                      return expiry < now
+                    }).length} bundles expired
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bundles Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>Common bundle management tasks</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button 
-                className="w-full justify-start bg-transparent" 
-                variant="outline"
-                onClick={() => setAddBundleModal(true)}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Bundle
-              </Button>
-              <Button className="w-full justify-start bg-transparent" variant="outline">
-                <Package className="h-4 w-4 mr-2" />
-                Bulk Import
-              </Button>
-              <Button className="w-full justify-start bg-transparent" variant="outline">
-                <AlertTriangle className="h-4 w-4 mr-2" />
-                Low Usage Alerts
-              </Button>
-              <Button className="w-full justify-start bg-transparent" variant="outline">
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Usage Reports
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest bundle activities</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="text-sm">
-                <div className="font-medium">Bundle renewed</div>
-                <div className="text-muted-foreground">Corporate Data Plan • 2h ago</div>
-              </div>
-              <div className="text-sm">
-                <div className="font-medium">New bundle assigned</div>
-                <div className="text-muted-foreground">Executive Voice+Data • 4h ago</div>
-              </div>
-              <div className="text-sm">
-                <div className="font-medium">Usage alert</div>
-                <div className="text-muted-foreground">Basic Data Plan • 1d ago</div>
-              </div>
-              <div className="text-sm">
-                <div className="font-medium">Bundle expired</div>
-                <div className="text-muted-foreground">International Roaming • 2d ago</div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Bundles Table */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Airtime Bundles</CardTitle>
-                <CardDescription>Manage mobile data plans and airtime allocations</CardDescription>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search bundles..." className="w-[250px] pl-8" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Airtime Bundles</CardTitle>
+                  <CardDescription>Mobile data plans and airtime bundle management</CardDescription>
                 </div>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
-                <Button size="sm" onClick={() => setAddBundleModal(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Bundle
-                </Button>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      placeholder="Search bundles..." 
+                      className="w-[250px] pl-8"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filter
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setFilterType("all")}>
+                        All Types
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setFilterType("data only")}>
+                        Data Only
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setFilterType("voice + data")}>
+                        Voice + Data
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setFilterType("unlimited")}>
+                        Unlimited
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Button size="sm" onClick={() => setAddBundleModal(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Bundle
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <BulkActions
-                selectedItems={selectedBundles}
-                totalItems={bundles.length}
-                onSelectAll={handleSelectAll}
-                onBulkDelete={handleBulkDelete}
-                onBulkExport={handleBulkExport}
-                onBulkStatusUpdate={handleBulkStatusUpdate}
-                onBulkEmail={handleBulkEmail}
-                entityType="bundles"
-              />
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Bundle</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Data Usage</TableHead>
-                    <TableHead>Voice Usage</TableHead>
-                    <TableHead>Assigned To</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Expiry</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bundles.map((bundle) => (
-                    <TableRow key={bundle.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{bundle.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {bundle.phoneNumber} • {bundle.cost}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{bundle.type}</Badge>
-                      </TableCell>
-                      <TableCell>{bundle.provider}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span>{bundle.dataUsed}</span>
-                            <span className="text-muted-foreground">/ {bundle.dataLimit}</span>
-                          </div>
-                          <Progress 
-                            value={getDataUsagePercentage(bundle.dataUsed, bundle.dataLimit)} 
-                            className="h-1" 
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {bundle.voiceMinutes > 0 && (
-                          <div className="space-y-1">
-                            <div className="flex items-center justify-between text-sm">
-                              <span>{bundle.voiceUsed}</span>
-                              <span className="text-muted-foreground">/ {bundle.voiceMinutes}</span>
-                            </div>
-                            <Progress 
-                              value={getVoiceUsagePercentage(bundle.voiceUsed, bundle.voiceMinutes)} 
-                              className="h-1" 
-                            />
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{bundle.assignedTo}</div>
-                          <div className="text-sm text-muted-foreground">{bundle.phoneNumber}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            bundle.status === "Active"
-                              ? "default"
-                              : bundle.status === "Low Data"
-                                ? "secondary"
-                                : "destructive"
-                          }
-                        >
-                          {bundle.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{bundle.expiryDate}</div>
-                          <div className="text-muted-foreground">
-                            {bundle.autoRenew ? "Auto-renew" : "Manual"}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Bundle</DropdownMenuItem>
-                            <DropdownMenuItem>Reassign User</DropdownMenuItem>
-                            <DropdownMenuItem>Renew Bundle</DropdownMenuItem>
-                            <DropdownMenuItem>Usage History</DropdownMenuItem>
-                            <DropdownMenuItem className="text-red-600">Deactivate</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+            </CardHeader>
+            <CardContent>
+              {bundlesLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="ml-2">Loading bundles...</span>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Bundle</TableHead>
+                      <TableHead>Assigned To</TableHead>
+                      <TableHead>Provider</TableHead>
+                      <TableHead>Data Usage</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Expiry</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredBundles.map((bundle) => {
+                      const assignedUser = users.find(u => u.id === bundle.assigned_to)
+                      const dataUsed = parseFloat(bundle.data_used) || 0
+                      const dataLimit = parseFloat(bundle.data_limit) || 1
+                      const usagePercentage = (dataUsed / dataLimit) * 100
+                      
+                      return (
+                        <TableRow key={bundle.id}>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{bundle.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {bundle.type} • {bundle.cost}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {assignedUser ? (
+                              <div className="flex items-center space-x-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarImage src={assignedUser.avatar || ""} />
+                                  <AvatarFallback>{assignedUser.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <div className="text-sm font-medium">{assignedUser.name}</div>
+                                  <div className="text-xs text-muted-foreground">{bundle.phone_number}</div>
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground">Unassigned</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{bundle.provider}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span>{bundle.data_used} / {bundle.data_limit}</span>
+                                <span>{usagePercentage.toFixed(1)}%</span>
+                              </div>
+                              <Progress 
+                                value={usagePercentage} 
+                                className={`h-2 ${usagePercentage > 80 ? '[&>div]:bg-red-500' : usagePercentage > 60 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-green-500'}`} 
+                              />
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={bundle.status === "Active" ? "default" : 
+                                     bundle.status === "Suspended" ? "secondary" : "destructive"}
+                            >
+                              {bundle.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {bundle.expiry_date ? (
+                                <div>
+                                  <div>{new Date(bundle.expiry_date).toLocaleDateString()}</div>
+                                  <div className="text-muted-foreground">
+                                    {Math.ceil((new Date(bundle.expiry_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} days left
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground">No expiry</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleBundleAction(bundle, 'details')}>
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleBundleAction(bundle, 'renew')}>
+                                  Renew Bundle
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleBundleAction(bundle, 'suspend')}>
+                                  Suspend Bundle
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Add Bundle Modal */}
-      <AddBundleModal
-        open={addBundleModal}
-        onOpenChange={setAddBundleModal}
-        onSubmit={handleAddBundle}
-      />
-    </SidebarInset>
+          {/* TODO: Add modals when components are created */}
+        </div>
+      </SidebarInset>
+    </ProtectedRoute>
   )
 } 

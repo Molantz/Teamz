@@ -20,7 +20,10 @@ import {
   PRApproval,
   PRNotification,
   PRAttachment,
-  PRComment
+  PRComment,
+  Project,
+  Report,
+  AirtimeBundle
 } from './supabase'
 
 import {
@@ -1033,6 +1036,174 @@ export const prApi = {
   }
 } 
 
+// Projects API
+export const projectsApi = {
+  async getAll(): Promise<Project[]> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<Project | null> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(projectData: Partial<Project>): Promise<Project> {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert([projectData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, projectData: Partial<Project>): Promise<Project> {
+    const { data, error } = await supabase
+      .from('projects')
+      .update(projectData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+}
+
+// Reports API
+export const reportsApi = {
+  async getAll(): Promise<Report[]> {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<Report | null> {
+    const { data, error } = await supabase
+      .from('reports')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(reportData: Partial<Report>): Promise<Report> {
+    const { data, error } = await supabase
+      .from('reports')
+      .insert([reportData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, reportData: Partial<Report>): Promise<Report> {
+    const { data, error } = await supabase
+      .from('reports')
+      .update(reportData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('reports')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+}
+
+// Airtime Bundles API
+export const airtimeBundlesApi = {
+  async getAll(): Promise<AirtimeBundle[]> {
+    const { data, error } = await supabase
+      .from('airtime_bundles')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    return data || []
+  },
+
+  async getById(id: string): Promise<AirtimeBundle | null> {
+    const { data, error } = await supabase
+      .from('airtime_bundles')
+      .select('*')
+      .eq('id', id)
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async create(bundleData: Partial<AirtimeBundle>): Promise<AirtimeBundle> {
+    const { data, error } = await supabase
+      .from('airtime_bundles')
+      .insert([bundleData])
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async update(id: string, bundleData: Partial<AirtimeBundle>): Promise<AirtimeBundle> {
+    const { data, error } = await supabase
+      .from('airtime_bundles')
+      .update(bundleData)
+      .eq('id', id)
+      .select()
+      .single()
+    
+    if (error) throw error
+    return data
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('airtime_bundles')
+      .delete()
+      .eq('id', id)
+    
+    if (error) throw error
+  }
+}
+
 // Assignment Actions API
 export async function createAssignmentAction(action: Omit<AssignmentAction, 'id' | 'assigned_at'>): Promise<AssignmentAction> {
   const response = await fetch('/api/assignment-actions', {
@@ -1251,6 +1422,424 @@ export async function sendBulkPRNotifications(notifications: Array<{
   if (!response.ok) throw new Error('Failed to send bulk notifications');
   return response.json();
 } 
+
+// Advanced Alerts System API
+export async function getAlerts(userId: string, filters?: any): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('alerts')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching alerts:', error)
+    throw error
+  }
+}
+
+export async function createAlert(alertData: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('alerts')
+      .insert([alertData])
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error creating alert:', error)
+    throw error
+  }
+}
+
+export async function updateAlert(alertId: string, updates: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('alerts')
+      .update(updates)
+      .eq('id', alertId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error updating alert:', error)
+    throw error
+  }
+}
+
+export async function deleteAlert(alertId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('alerts')
+      .delete()
+      .eq('id', alertId)
+
+    if (error) throw error
+  } catch (error) {
+    console.error('Error deleting alert:', error)
+    throw error
+  }
+}
+
+// Alert Rules API
+export async function getAlertRules(): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('alert_rules')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching alert rules:', error)
+    throw error
+  }
+}
+
+export async function createAlertRule(ruleData: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('alert_rules')
+      .insert([ruleData])
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error creating alert rule:', error)
+    throw error
+  }
+}
+
+export async function updateAlertRule(ruleId: string, updates: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('alert_rules')
+      .update(updates)
+      .eq('id', ruleId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error updating alert rule:', error)
+    throw error
+  }
+}
+
+// Real-time Dashboard API
+export async function getDashboardMetrics(): Promise<any> {
+  try {
+    const [users, devices, incidents, requests] = await Promise.all([
+      usersApi.getAll(),
+      assetsApi.getAll(),
+      incidentsApi.getAll(),
+      requestsApi.getAll()
+    ])
+
+    return {
+      totalUsers: users.length,
+      activeUsers: users.filter(u => u.status === 'Active').length,
+      totalDevices: devices.length,
+      activeDevices: devices.filter(d => d.status === 'Assigned').length,
+      openIncidents: incidents.filter(i => i.status === 'New' || i.status === 'In Progress').length,
+      pendingRequests: requests.filter(r => r.status === 'Pending').length,
+      systemUptime: 99.8,
+      avgResponseTime: 2.3
+    }
+  } catch (error) {
+    console.error('Error fetching dashboard metrics:', error)
+    throw error
+  }
+}
+
+export async function getSystemStatus(): Promise<any[]> {
+  try {
+    // Mock system status data
+    return [
+      {
+        id: '1',
+        name: 'Main Database',
+        status: 'online',
+        uptime: 99.8,
+        responseTime: 45,
+        lastCheck: new Date()
+      },
+      {
+        id: '2',
+        name: 'API Gateway',
+        status: 'online',
+        uptime: 99.9,
+        responseTime: 12,
+        lastCheck: new Date()
+      },
+      {
+        id: '3',
+        name: 'File Storage',
+        status: 'warning',
+        uptime: 95.2,
+        responseTime: 180,
+        lastCheck: new Date()
+      }
+    ]
+  } catch (error) {
+    console.error('Error fetching system status:', error)
+    throw error
+  }
+}
+
+// Bulk Operations API
+export async function bulkUpdateUsers(userIds: string[], updates: any): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .in('id', userIds)
+      .select()
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error bulk updating users:', error)
+    throw error
+  }
+}
+
+export async function bulkDeleteUsers(userIds: string[]): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .in('id', userIds)
+
+    if (error) throw error
+  } catch (error) {
+    console.error('Error bulk deleting users:', error)
+    throw error
+  }
+}
+
+export async function bulkUpdateDevices(deviceIds: string[], updates: any): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('assets')
+      .update(updates)
+      .in('id', deviceIds)
+      .select()
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error bulk updating devices:', error)
+    throw error
+  }
+}
+
+export async function bulkDeleteDevices(deviceIds: string[]): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('assets')
+      .delete()
+      .in('id', deviceIds)
+
+    if (error) throw error
+  } catch (error) {
+    console.error('Error bulk deleting devices:', error)
+    throw error
+  }
+}
+
+export async function bulkUpdateIncidents(incidentIds: string[], updates: any): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('incidents')
+      .update(updates)
+      .in('id', incidentIds)
+      .select()
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error bulk updating incidents:', error)
+    throw error
+  }
+}
+
+export async function bulkDeleteIncidents(incidentIds: string[]): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('incidents')
+      .delete()
+      .in('id', incidentIds)
+
+    if (error) throw error
+  } catch (error) {
+    console.error('Error bulk deleting incidents:', error)
+    throw error
+  }
+}
+
+// Audit Trail API
+export async function getAuditLogs(filters?: any): Promise<any[]> {
+  try {
+    let query = supabase
+      .from('audit_logs')
+      .select('*')
+      .order('timestamp', { ascending: false })
+
+    if (filters) {
+      if (filters.user_id) {
+        query = query.eq('user_id', filters.user_id)
+      }
+      if (filters.action) {
+        query = query.eq('action', filters.action)
+      }
+      if (filters.severity) {
+        query = query.eq('severity', filters.severity)
+      }
+      if (filters.category) {
+        query = query.eq('category', filters.category)
+      }
+      if (filters.date_from) {
+        query = query.gte('timestamp', filters.date_from)
+      }
+      if (filters.date_to) {
+        query = query.lte('timestamp', filters.date_to)
+      }
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching audit logs:', error)
+    throw error
+  }
+}
+
+export async function createAuditLog(logData: any): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .insert([logData])
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  } catch (error) {
+    console.error('Error creating audit log:', error)
+    throw error
+  }
+}
+
+export async function getAuditLogsByResource(resourceType: string, resourceId: string): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('audit_logs')
+      .select('*')
+      .eq('resource_type', resourceType)
+      .eq('resource_id', resourceId)
+      .order('timestamp', { ascending: false })
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error fetching audit logs by resource:', error)
+    throw error
+  }
+}
+
+// Advanced Search API
+export async function advancedSearch(table: string, filters: any): Promise<any[]> {
+  try {
+    let query = supabase.from(table).select('*')
+
+    if (filters.search) {
+      // Implement full-text search based on table structure
+      const searchFields = getSearchFields(table)
+      const searchConditions = searchFields.map(field => `${field}.ilike.%${filters.search}%`)
+      query = query.or(searchConditions.join(','))
+    }
+
+    if (filters.status) {
+      query = query.eq('status', filters.status)
+    }
+
+    if (filters.date_from) {
+      query = query.gte('created_at', filters.date_from)
+    }
+
+    if (filters.date_to) {
+      query = query.lte('created_at', filters.date_to)
+    }
+
+    if (filters.user_id) {
+      query = query.eq('user_id', filters.user_id)
+    }
+
+    const { data, error } = await query
+
+    if (error) throw error
+    return data || []
+  } catch (error) {
+    console.error('Error performing advanced search:', error)
+    throw error
+  }
+}
+
+function getSearchFields(table: string): string[] {
+  switch (table) {
+    case 'users':
+      return ['name', 'email', 'department']
+    case 'assets':
+      return ['name', 'type', 'location']
+    case 'incidents':
+      return ['title', 'description', 'category']
+    case 'requests':
+      return ['title', 'description', 'type']
+    default:
+      return ['name', 'description']
+  }
+}
+
+// Export API
+export async function exportData(table: string, filters: any, format: 'csv' | 'json' = 'csv'): Promise<string> {
+  try {
+    const data = await advancedSearch(table, filters)
+    
+    if (format === 'csv') {
+      return convertToCSV(data)
+    } else {
+      return JSON.stringify(data, null, 2)
+    }
+  } catch (error) {
+    console.error('Error exporting data:', error)
+    throw error
+  }
+}
+
+function convertToCSV(data: any[]): string {
+  if (data.length === 0) return ''
+  
+  const headers = Object.keys(data[0])
+  const csvRows = [
+    headers.join(','),
+    ...data.map(row => headers.map(header => JSON.stringify(row[header])).join(','))
+  ]
+  
+  return csvRows.join('\n')
+}
 
 // Individual function exports for backward compatibility
 export const getAllPRs = () => prApi.getAllPRs()

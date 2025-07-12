@@ -346,4 +346,63 @@ export interface PRComment {
   comment: string
   is_internal: boolean
   created_at: string
+}
+
+export interface Project {
+  id: string
+  name: string
+  description?: string
+  status: string
+  priority: string
+  progress?: number
+  budget?: number
+  spent?: number
+  start_date?: string
+  end_date?: string
+  manager_id?: string
+  team_size?: number
+  tasks_completed?: number
+  total_tasks?: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Report {
+  id: string
+  report_id: string
+  name: string
+  type: string
+  category?: string
+  frequency?: string
+  parameters?: any
+  recipients?: string[]
+  schedule_time?: string
+  schedule_day?: number
+  is_active: boolean
+  created_by: string
+  last_generated?: string
+  next_generation?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AirtimeBundle {
+  id: string
+  name: string
+  type: string
+  provider: string
+  data_limit: string
+  data_used: string
+  voice_minutes?: number
+  voice_used?: number
+  validity: string
+  cost: string
+  status: string
+  assigned_to?: string
+  assigned_to_name?: string
+  phone_number?: string
+  expiry_date?: string
+  auto_renew: boolean
+  created_at: string
+  updated_at: string
 } 
