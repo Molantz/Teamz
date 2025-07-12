@@ -18,7 +18,9 @@ import {
 } from "lucide-react"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { ProtectedRoute } from '@/components/protected-route'
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { usersApi, assetsApi, incidentsApi, requestsApi } from "@/lib/api"
+import { User, Asset, Incident, Request } from "@/lib/supabase"
 import { AddUserModal } from "@/components/modals/add-user-modal"
 import { AddAssetModal } from "@/components/modals/add-asset-modal"
 import { ReportIssueModal } from "@/components/modals/report-issue-modal"
@@ -102,35 +104,165 @@ export default function Dashboard() {
   const [newRequestModal, setNewRequestModal] = useState(false)
   const [assignDeviceModal, setAssignDeviceModal] = useState(false)
   const [viewReportsModal, setViewReportsModal] = useState(false)
+  
+  // Real-time data states
+  const [users, setUsers] = useState<User[]>([])
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [requests, setRequests] = useState<Request[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Fetch real-time data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        const [usersData, assetsData, incidentsData, requestsData] = await Promise.all([
+          usersApi.getAll(),
+          assetsApi.getAll(),
+          incidentsApi.getAll(),
+          requestsApi.getAll()
+        ])
+        
+        setUsers(usersData)
+        setAssets(assetsData)
+        setIncidents(incidentsData)
+        setRequests(requestsData)
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+    
+    // Set up real-time subscriptions (optional)
+    // const interval = setInterval(fetchDashboardData, 30000) // Refresh every 30 seconds
+    // return () => clearInterval(interval)
+  }, [])
+
+  // Calculate real-time stats
+  const dashboardStats = [
+    {
+      title: "Total Users",
+      value: users.length.toString(),
+      change: "+12%", // You can calculate this from historical data
+      trend: "up",
+      icon: Users,
+      color: "text-blue-600",
+    },
+    {
+      title: "Active Devices",
+      value: assets.filter(asset => asset.status === "Available" || asset.status === "Assigned").length.toString(),
+      change: "+5%",
+      trend: "up",
+      icon: Laptop,
+      color: "text-green-600",
+    },
+    {
+      title: "Open Incidents",
+      value: incidents.filter(incident => incident.status === "New" || incident.status === "In Progress").length.toString(),
+      change: "-8%",
+      trend: "down",
+      icon: ShieldAlert,
+      color: "text-red-600",
+    },
+    {
+      title: "Pending Requests",
+      value: requests.filter(request => request.status === "Pending").length.toString(),
+      change: "+15%",
+      trend: "up",
+      icon: Wrench,
+      color: "text-orange-600",
+    },
+  ]
+
+  // Get recent incidents (last 5)
+  const recentIncidents = incidents
+    .filter(incident => incident.status !== "Resolved")
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5)
+    .map(incident => ({
+      id: incident.id,
+      title: incident.title,
+      status: incident.status,
+      priority: incident.priority,
+      assignee: incident.assignee || "Unassigned",
+      created: getTimeAgo(incident.created_at),
+    }))
+
+  // Helper function to calculate time ago
+  function getTimeAgo(dateString: string): string {
+    const now = new Date()
+    const date = new Date(dateString)
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return "Just now"
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    const diffInDays = Math.floor(diffInHours / 24)
+    return `${diffInDays}d ago`
+  }
+
+  // System health (you can connect to real monitoring data)
+  const systemHealth = [
+    { name: "Server CPU", value: 45, status: "good" },
+    { name: "Memory Usage", value: 72, status: "warning" },
+    { name: "Disk Space", value: 89, status: "critical" },
+    { name: "Network Load", value: 34, status: "good" },
+  ]
 
   const handleAddUser = (data: any) => {
     console.log("New user added:", data)
-    // Refresh dashboard data if needed
+    // Refresh users data
+    usersApi.getAll().then(setUsers)
   }
 
   const handleAddAsset = (data: any) => {
     console.log("New asset added:", data)
-    // Refresh dashboard data if needed
+    // Refresh assets data
+    assetsApi.getAll().then(setAssets)
   }
 
   const handleReportIssue = (data: any) => {
     console.log("Issue reported:", data)
-    // Refresh dashboard data if needed
+    // Refresh incidents data
+    incidentsApi.getAll().then(setIncidents)
   }
 
   const handleNewRequest = (data: any) => {
     console.log("New request created:", data)
-    // Refresh dashboard data if needed
+    // Refresh requests data
+    requestsApi.getAll().then(setRequests)
   }
 
   const handleAssignDevice = (data: any) => {
     console.log("Device assigned:", data)
-    // Refresh dashboard data if needed
+    // Refresh assets data
+    assetsApi.getAll().then(setAssets)
   }
 
   const handleViewReports = (data: any) => {
     console.log("Report generated:", data)
     // Handle report generation
+  }
+
+  if (loading) {
+    return (
+      <ProtectedRoute>
+        <SidebarInset>
+          <Header title="Dashboard" description="Overview of your IT infrastructure and operations" />
+          <div className="flex-1 space-y-6 p-6">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-600">Loading dashboard...</p>
+              </div>
+            </div>
+          </div>
+        </SidebarInset>
+      </ProtectedRoute>
+    )
   }
 
   return (

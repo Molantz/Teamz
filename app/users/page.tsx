@@ -69,7 +69,13 @@ export default function UsersPage() {
     const fetchUsers = async () => {
       try {
         const data = await usersApi.getAll()
-        setUsers(data)
+        setUsers(
+          data.map(u => ({
+            ...u,
+            id: typeof u.id === 'string' ? parseInt(u.id, 10) : u.id,
+            lastLogin: u.last_login || "",
+          }))
+        )
       } catch (error) {
         console.error('Failed to fetch users:', error)
       } finally {
@@ -82,7 +88,14 @@ export default function UsersPage() {
   const handleCreateUser = async (formData: any) => {
     try {
       const newUser = await usersApi.create(formData)
-      setUsers([...users, newUser])
+      setUsers([
+        ...users,
+        {
+          ...newUser,
+          id: typeof newUser.id === 'string' ? parseInt(newUser.id, 10) : newUser.id,
+          lastLogin: newUser.last_login || "",
+        }
+      ])
       setCreateUserModal(false)
       form.reset()
       
