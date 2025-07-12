@@ -1,67 +1,139 @@
 "use client"
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Laptop, Search, CalendarIcon, Camera, CheckCircle } from "lucide-react"
-import { useState } from "react"
-import { format } from "date-fns"
+import { toast } from "sonner"
+import { auditLogger } from "@/lib/audit-log"
+import { Laptop, User, Calendar, Building, Package, CheckCircle } from "lucide-react"
 
 interface AssignDeviceModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  employeeName: string
-  employeeId: string
+  onSubmit?: (data: any) => void
 }
 
-export function AssignDeviceModal({ open, onOpenChange, employeeName, employeeId }: AssignDeviceModalProps) {
-  const [selectedDevice, setSelectedDevice] = useState<string>("")
-  const [assignmentDate, setAssignmentDate] = useState<Date>()
-  const [scheduleMaintenance, setScheduleMaintenance] = useState(false)
+const availableDevices = [
+  { id: "LAP-001", name: "Dell Latitude 5520", type: "Laptop", status: "Available", location: "Head Office" },
+  { id: "LAP-002", name: "HP EliteBook 840", type: "Laptop", status: "Available", location: "Head Office" },
+  { id: "DESK-001", name: "Dell OptiPlex 7090", type: "Desktop", status: "Available", location: "Branch Office A" },
+  { id: "MON-001", name: "Dell P2419H Monitor", type: "Monitor", status: "Available", location: "Head Office" },
+  { id: "MON-002", name: "HP E24 Monitor", type: "Monitor", status: "Available", location: "Branch Office B" },
+  { id: "PRINT-001", name: "HP LaserJet Pro", type: "Printer", status: "Available", location: "Head Office" }
+]
 
-  const availableDevices = [
-    {
-      id: "DEV-005",
-      name: "MacBook Pro 16",
-      type: "Laptop",
-      status: "Available",
-      condition: "New",
-      location: "Warehouse A",
-      specs: "M2 Pro, 16GB RAM, 512GB SSD",
-    },
-    {
-      id: "DEV-006",
-      name: "Dell Latitude 7430",
-      type: "Laptop",
-      status: "Available",
-      condition: "Excellent",
-      location: "Warehouse A",
-      specs: "Intel i7, 16GB RAM, 256GB SSD",
-    },
-    {
-      id: "DEV-007",
-      name: "iPad Pro 12.9",
-      type: "Tablet",
-      status: "Available",
-      condition: "Good",
-      location: "Warehouse B",
-      specs: "M2 Chip, 256GB, WiFi + Cellular",
-    },
-  ]
+const users = [
+  { id: "USR-001", name: "John Smith", email: "john.smith@company.com", department: "IT Support" },
+  { id: "USR-002", name: "Sarah Johnson", email: "sarah.johnson@company.com", department: "Network Team" },
+  { id: "USR-003", name: "Mike Wilson", email: "mike.wilson@company.com", department: "Hardware Support" },
+  { id: "USR-004", name: "Lisa Brown", email: "lisa.brown@company.com", department: "Software Support" },
+  { id: "USR-005", name: "David Lee", email: "david.lee@company.com", department: "Sales" },
+  { id: "USR-006", name: "Emma Davis", email: "emma.davis@company.com", department: "Marketing" }
+]
 
-  const handleAssign = () => {
-    // Handle device assignment logic
-    console.log("Assigning device:", selectedDevice, "to:", employeeId)
-    onOpenChange(false)
+const assignmentTypes = [
+  "Permanent Assignment",
+  "Temporary Assignment",
+  "Loan",
+  "Replacement",
+  "New Hire"
+]
+
+export function AssignDeviceModal({ open, onOpenChange, onSubmit }: AssignDeviceModalProps) {
+  const [isLoading, setIsLoading] = useState(false)
+  const [formData, setFormData] = useState({
+    deviceId: "",
+    userId: "",
+    assignmentType: "",
+    assignmentDate: "",
+    expectedReturnDate: "",
+    reason: "",
+    notes: "",
+    terms: "",
+    supervisor: ""
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      const selectedDevice = availableDevices.find(d => d.id === formData.deviceId)
+      const selectedUser = users.find(u => u.id === formData.userId)
+      
+      const newAssignment = {
+        id: `ASG-${Date.now()}`,
+        ...formData,
+        deviceName: selectedDevice?.name || "",
+        userName: selectedUser?.name || "",
+        userEmail: selectedUser?.email || "",
+        status: "Active",
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      }
+      
+      if (onSubmit) {
+        onSubmit(newAssignment)
+      }
+      
+      toast.success(`Device assigned to ${selectedUser?.name} successfully`)
+      
+      auditLogger.logUserAction(
+        'current-user',
+        'Current User',
+        'Assigned device',
+        'assignment',
+        newAssignment.id,
+        `Assigned ${selectedDevice?.name} to ${selectedUser?.name}`
+      )
+      
+      // Reset form
+      setFormData({
+        deviceId: "",
+        userId: "",
+        assignmentType: "",
+        assignmentDate: "",
+        expectedReturnDate: "",
+        reason: "",
+        notes: "",
+        terms: "",
+        supervisor: ""
+      })
+      
+      onOpenChange(false)
+    } catch (error) {
+      toast.error("Failed to assign device")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
+
+  const getDeviceIcon = (type: string) => {
+    switch (type) {
+      case "Laptop":
+        return <Laptop className="h-4 w-4" />
+      case "Desktop":
+        return <Package className="h-4 w-4" />
+      case "Monitor":
+        return <Package className="h-4 w-4" />
+      case "Printer":
+        return <Package className="h-4 w-4" />
+      default:
+        return <Package className="h-4 w-4" />
+    }
   }
 
   return (
@@ -73,197 +145,158 @@ export function AssignDeviceModal({ open, onOpenChange, employeeName, employeeId
             Assign Device
           </DialogTitle>
           <DialogDescription>
-            Assign IT equipment to {employeeName} ({employeeId})
+            Assign IT equipment to users or departments
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Device Selection */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="device-search">Search Available Devices</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input id="device-search" placeholder="Search by name, type, or ID..." className="pl-8" />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <Label>Available Devices ({availableDevices.length})</Label>
-              {availableDevices.map((device) => (
-                <Card
-                  key={device.id}
-                  className={`cursor-pointer transition-colors ${
-                    selectedDevice === device.id ? "ring-2 ring-primary" : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => setSelectedDevice(device.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                          <Laptop className="h-5 w-5" />
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="deviceId">Select Device *</Label>
+            <Select value={formData.deviceId} onValueChange={(value) => handleInputChange("deviceId", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a device to assign" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableDevices.map((device) => (
+                  <SelectItem key={device.id} value={device.id}>
+                    <div className="flex items-center gap-2">
+                      {getDeviceIcon(device.type)}
+                      <div>
+                        <div className="font-medium">{device.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {device.type} • {device.location}
                         </div>
-                        <div className="space-y-1">
-                          <div className="font-medium">{device.name}</div>
-                          <div className="text-sm text-muted-foreground">{device.specs}</div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <span>{device.id}</span>
-                            <span>•</span>
-                            <span>{device.location}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1">
-                        <Badge variant="outline">{device.type}</Badge>
-                        <Badge variant="default">{device.status}</Badge>
-                        <Badge variant={device.condition === "New" ? "default" : "secondary"}>{device.condition}</Badge>
                       </div>
                     </div>
-                    {selectedDevice === device.id && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="flex items-center gap-2 text-sm text-green-600">
-                          <CheckCircle className="h-4 w-4" />
-                          Selected for assignment
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="userId">Assign To *</Label>
+            <Select value={formData.userId} onValueChange={(value) => handleInputChange("userId", value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select user to assign device to" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <div>
+                        <div className="font-medium">{user.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {user.email} • {user.department}
                         </div>
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <Separator />
-
-          {/* Assignment Details */}
-          <div className="space-y-4">
-            <h3 className="font-medium">Assignment Details</h3>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="assignment-type">Assignment Type</Label>
-                <Select defaultValue="permanent">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="permanent">Permanent</SelectItem>
-                    <SelectItem value="temporary">Temporary</SelectItem>
-                    <SelectItem value="project">Project-based</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Assignment Date</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left font-normal bg-transparent">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {assignmentDate ? format(assignmentDate, "PPP") : "Select date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={assignmentDate} onSelect={setAssignmentDate} initialFocus />
-                  </PopoverContent>
-                </Popover>
-              </div>
-            </div>
-
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="assignment-notes">Assignment Notes</Label>
-              <Textarea
-                id="assignment-notes"
-                placeholder="Add any special instructions or notes for this assignment..."
-                rows={3}
+              <Label htmlFor="assignmentType">Assignment Type *</Label>
+              <Select value={formData.assignmentType} onValueChange={(value) => handleInputChange("assignmentType", value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select assignment type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {assignmentTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="assignmentDate">Assignment Date *</Label>
+              <Input
+                id="assignmentDate"
+                type="date"
+                value={formData.assignmentDate}
+                onChange={(e) => handleInputChange("assignmentDate", e.target.value)}
+                required
               />
             </div>
+          </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="schedule-maintenance"
-                checked={scheduleMaintenance}
-                onCheckedChange={setScheduleMaintenance}
-              />
-              <Label htmlFor="schedule-maintenance">Schedule maintenance reminder</Label>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="expectedReturnDate">Expected Return Date</Label>
+            <Input
+              id="expectedReturnDate"
+              type="date"
+              value={formData.expectedReturnDate}
+              onChange={(e) => handleInputChange("expectedReturnDate", e.target.value)}
+            />
+          </div>
 
-            {scheduleMaintenance && (
-              <div className="ml-6 space-y-2">
-                <Label htmlFor="maintenance-interval">Maintenance Interval</Label>
-                <Select defaultValue="3months">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1month">1 Month</SelectItem>
-                    <SelectItem value="3months">3 Months</SelectItem>
-                    <SelectItem value="6months">6 Months</SelectItem>
-                    <SelectItem value="1year">1 Year</SelectItem>
-                  </SelectContent>
-                </Select>
+          <div className="space-y-2">
+            <Label htmlFor="reason">Reason for Assignment *</Label>
+            <Textarea
+              id="reason"
+              value={formData.reason}
+              onChange={(e) => handleInputChange("reason", e.target.value)}
+              placeholder="Why is this device being assigned?"
+              rows={3}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="supervisor">Supervisor Approval</Label>
+            <Input
+              id="supervisor"
+              value={formData.supervisor}
+              onChange={(e) => handleInputChange("supervisor", e.target.value)}
+              placeholder="Supervisor name or email"
+            />
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Assignment Terms</CardTitle>
+              <CardDescription>Set conditions and responsibilities</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="terms">Terms and Conditions</Label>
+                <Textarea
+                  id="terms"
+                  value={formData.terms}
+                  onChange={(e) => handleInputChange("terms", e.target.value)}
+                  placeholder="Device usage policies, care instructions, return conditions..."
+                  rows={3}
+                />
               </div>
-            )}
-          </div>
-
-          <Separator />
-
-          {/* Document Upload */}
-          <div className="space-y-4">
-            <h3 className="font-medium">Assignment Documentation</h3>
-
-            <div className="space-y-2">
-              <Label>Upload Assignment Form (Optional)</Label>
-              <div className="flex items-center gap-2">
-                <Input type="file" accept=".pdf,.jpg,.jpeg,.png" className="flex-1" />
-                <Button variant="outline" size="sm">
-                  <Camera className="h-4 w-4 mr-2" />
-                  Camera
-                </Button>
+              
+              <div className="space-y-2">
+                <Label htmlFor="notes">Additional Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
+                  placeholder="Any additional information about this assignment..."
+                  rows={2}
+                />
               </div>
-              <p className="text-xs text-muted-foreground">Upload signed assignment form or take a photo</p>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
+        </form>
 
-          {/* Assignment Summary */}
-          {selectedDevice && (
-            <Card className="bg-muted/50">
-              <CardContent className="p-4">
-                <h4 className="font-medium mb-2">Assignment Summary</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>Device:</span>
-                    <span className="font-medium">{availableDevices.find((d) => d.id === selectedDevice)?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Employee:</span>
-                    <span className="font-medium">{employeeName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Assignment Date:</span>
-                    <span className="font-medium">{assignmentDate ? format(assignmentDate, "PPP") : "Not set"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Maintenance:</span>
-                    <span className="font-medium">{scheduleMaintenance ? "Scheduled" : "Not scheduled"}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleAssign} disabled={!selectedDevice}>
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Assign Device
-            </Button>
-          </div>
-        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={isLoading || !formData.deviceId || !formData.userId || !formData.assignmentType || !formData.assignmentDate || !formData.reason}>
+            {isLoading ? "Assigning..." : "Assign Device"}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -18,6 +18,13 @@ import {
 } from "lucide-react"
 import { SidebarInset } from "@/components/ui/sidebar"
 import { ProtectedRoute } from '@/components/protected-route'
+import { useState } from "react"
+import { AddUserModal } from "@/components/modals/add-user-modal"
+import { AddAssetModal } from "@/components/modals/add-asset-modal"
+import { ReportIssueModal } from "@/components/modals/report-issue-modal"
+import { NewRequestModal } from "@/components/modals/new-request-modal"
+import { AssignDeviceModal } from "@/components/modals/assign-device-modal"
+import { ViewReportsModal } from "@/components/modals/view-reports-modal"
 
 const dashboardStats = [
   {
@@ -89,6 +96,37 @@ const systemHealth = [
 ]
 
 export default function Dashboard() {
+  const [addUserModal, setAddUserModal] = useState(false)
+  const [addAssetModal, setAddAssetModal] = useState(false)
+  const [reportIssueModal, setReportIssueModal] = useState(false)
+  const [newRequestModal, setNewRequestModal] = useState(false)
+  const [assignDeviceModal, setAssignDeviceModal] = useState(false)
+  const [viewReportsModal, setViewReportsModal] = useState(false)
+
+  const handleAddUser = (data: any) => {
+    console.log("New user added:", data)
+  }
+
+  const handleAddAsset = (data: any) => {
+    console.log("New asset added:", data)
+  }
+
+  const handleReportIssue = (data: any) => {
+    console.log("Issue reported:", data)
+  }
+
+  const handleNewRequest = (data: any) => {
+    console.log("New request created:", data)
+  }
+
+  const handleAssignDevice = (data: any) => {
+    console.log("Device assigned:", data)
+  }
+
+  const handleViewReports = (data: any) => {
+    console.log("Report generated:", data)
+  }
+
   return (
     <ProtectedRoute>
       <SidebarInset>
@@ -211,37 +249,55 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
-                <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                <Card 
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => setAddUserModal(true)}
+                >
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <Users className="h-8 w-8 mb-2 text-blue-600" />
                     <span className="text-sm font-medium">Add User</span>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                <Card 
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => setAddAssetModal(true)}
+                >
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <Package className="h-8 w-8 mb-2 text-green-600" />
                     <span className="text-sm font-medium">New Asset</span>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                <Card 
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => setReportIssueModal(true)}
+                >
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <ShieldAlert className="h-8 w-8 mb-2 text-red-600" />
                     <span className="text-sm font-medium">Report Issue</span>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                <Card 
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => setNewRequestModal(true)}
+                >
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <Wrench className="h-8 w-8 mb-2 text-orange-600" />
                     <span className="text-sm font-medium">New Request</span>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                <Card 
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => setAssignDeviceModal(true)}
+                >
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <Laptop className="h-8 w-8 mb-2 text-purple-600" />
                     <span className="text-sm font-medium">Assign Device</span>
                   </CardContent>
                 </Card>
-                <Card className="cursor-pointer transition-colors hover:bg-muted/50">
+                <Card 
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => setViewReportsModal(true)}
+                >
                   <CardContent className="flex flex-col items-center justify-center p-6">
                     <TrendingUp className="h-8 w-8 mb-2 text-indigo-600" />
                     <span className="text-sm font-medium">View Reports</span>
@@ -251,6 +307,38 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Modals */}
+        <AddUserModal
+          open={addUserModal}
+          onOpenChange={setAddUserModal}
+          onSubmit={handleAddUser}
+        />
+        <AddAssetModal
+          open={addAssetModal}
+          onOpenChange={setAddAssetModal}
+          onSubmit={handleAddAsset}
+        />
+        <ReportIssueModal
+          open={reportIssueModal}
+          onOpenChange={setReportIssueModal}
+          onSubmit={handleReportIssue}
+        />
+        <NewRequestModal
+          open={newRequestModal}
+          onOpenChange={setNewRequestModal}
+          onSubmit={handleNewRequest}
+        />
+        <AssignDeviceModal
+          open={assignDeviceModal}
+          onOpenChange={setAssignDeviceModal}
+          onSubmit={handleAssignDevice}
+        />
+        <ViewReportsModal
+          open={viewReportsModal}
+          onOpenChange={setViewReportsModal}
+          onSubmit={handleViewReports}
+        />
       </SidebarInset>
     </ProtectedRoute>
   )
